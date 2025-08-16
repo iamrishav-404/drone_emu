@@ -1,0 +1,97 @@
+.controller {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0b0f14;
+  color: #e6edf3;
+  height: 100vh;
+  width: 100%;
+}
+
+.bar {
+  padding: 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: #111722;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+}
+
+input,
+button {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #2b3443;
+  background: #0e1520;
+  color: #e6edf3;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1a2332;
+}
+
+.row {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 16px;
+  gap: 12px;
+  padding: 0 12px;
+}
+
+.pad {
+  width: 44vw;
+  height: 44vw;
+  max-width: 360px;
+  max-height: 360px;
+  background: #0e1520;
+  border: 2px solid #2b3443;
+  border-radius: 20px;
+  position: relative;
+  touch-action: none;
+}
+
+.stick {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #1b2636;
+  border: 2px solid #35455e;
+  position: absolute;
+  left: calc(50% - 40px);
+  top: calc(50% - 40px);
+  transition: none;
+}
+
+.hint {
+  text-align: center;
+  opacity: 0.7;
+  font-size: 14px;
+  margin-top: 6px;
+  padding: 0 12px;
+}
+
+#status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.status-connected {
+  background: #0d4d0d;
+  color: #4ade80;
+}
+
+.status-disconnected {
+  background: #4d0d0d;
+  color: #ef4444;
+}
+
+.status-error {
+  background: #4d1d0d;
+  color: #f59e0b;
+}

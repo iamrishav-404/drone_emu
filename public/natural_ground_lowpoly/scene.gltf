@@ -1,0 +1,334 @@
+{
+  "accessors": [
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 836,
+      "max": [
+        3.096669912338257,
+        3.1241700649261475,
+        0.08985999971628189
+      ],
+      "min": [
+        -3.092750072479248,
+        -3.108069896697998,
+        -0.3150100111961365
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 10032,
+      "componentType": 5126,
+      "count": 836,
+      "max": [
+        0.9030416011810303,
+        0.9090935587882996,
+        0.6328323483467102
+      ],
+      "min": [
+        -0.9006785154342651,
+        -0.89689701795578,
+        -0.9999819993972778
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 1254,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 20064,
+      "componentType": 5126,
+      "count": 352,
+      "max": [
+        3.0701000690460205,
+        3.097019910812378,
+        -0.20614999532699585
+      ],
+      "min": [
+        -3.063539981842041,
+        -3.0790700912475586,
+        -0.7404800057411194
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 24288,
+      "componentType": 5126,
+      "count": 352,
+      "max": [
+        0.9695016145706177,
+        0.96830815076828,
+        0.5773512125015259
+      ],
+      "min": [
+        -0.9681091904640198,
+        -0.9673271179199219,
+        -0.28046974539756775
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 5016,
+      "componentType": 5125,
+      "count": 528,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 28512,
+      "componentType": 5126,
+      "count": 836,
+      "max": [
+        3.0438899993896484,
+        3.0701699256896973,
+        -0.6341500282287598
+      ],
+      "min": [
+        -3.034369945526123,
+        -3.050139904022217,
+        -1.13850998878479
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 38544,
+      "componentType": 5126,
+      "count": 836,
+      "max": [
+        0.9191668629646301,
+        0.9222006797790527,
+        0.9999819993972778
+      ],
+      "min": [
+        -0.920311450958252,
+        -0.919731080532074,
+        -0.5202972292900085
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 7128,
+      "componentType": 5125,
+      "count": 1254,
+      "type": "SCALAR"
+    }
+  ],
+  "asset": {
+    "extras": {
+      "author": "John Trent (https://sketchfab.com/brjce)",
+      "license": "CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)",
+      "source": "https://sketchfab.com/3d-models/natural-ground-1-lowpoly-5973464caa384e9cb0dd901cb16c69a8",
+      "title": "Natural ground #1 [LowPoly]"
+    },
+    "generator": "Sketchfab-12.66.0",
+    "version": "2.0"
+  },
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 12144,
+      "name": "floatBufferViews",
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteLength": 48576,
+      "byteOffset": 12144,
+      "byteStride": 12,
+      "name": "floatBufferViews",
+      "target": 34962
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 60720,
+      "uri": "scene.bin"
+    }
+  ],
+  "materials": [
+    {
+      "doubleSided": true,
+      "name": "Herbe",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.21004250645637512,
+          0.5595998167991638,
+          0.1456741988658905,
+          1.0
+        ],
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.6
+      }
+    },
+    {
+      "doubleSided": true,
+      "name": "Terre",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.3672371804714203,
+          0.1759534329175949,
+          0.07530920207500458,
+          1.0
+        ],
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.6
+      }
+    },
+    {
+      "doubleSided": true,
+      "name": "Pierre",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.5070673227310181,
+          0.5070673227310181,
+          0.5070673227310181,
+          1.0
+        ],
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.6
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Plane_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 1,
+            "POSITION": 0
+          },
+          "indices": 2,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "Plane_1",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 4,
+            "POSITION": 3
+          },
+          "indices": 5,
+          "material": 1,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "Plane_2",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 7,
+            "POSITION": 6
+          },
+          "indices": 8,
+          "material": 2,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "children": [
+        1
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.220446049250313e-16,
+        -1.0,
+        0.0,
+        0.0,
+        1.0,
+        2.220446049250313e-16,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "Sketchfab_model"
+    },
+    {
+      "children": [
+        2,
+        4
+      ],
+      "name": "Root"
+    },
+    {
+      "children": [
+        3
+      ],
+      "matrix": [
+        0.7427500000000001,
+        0.6672900000000002,
+        -0.05519000000000001,
+        0.0,
+        -0.50704,
+        0.61438,
+        0.6045200000000001,
+        0.0,
+        0.4373000000000001,
+        -0.42103,
+        0.7946700000000001,
+        0.0,
+        6.076250000000001,
+        -5.994549999999999,
+        5.903860000000001,
+        1.0
+      ],
+      "name": "Lamp"
+    },
+    {
+      "name": "Lamp"
+    },
+    {
+      "children": [
+        5,
+        6,
+        7
+      ],
+      "name": "Plane"
+    },
+    {
+      "mesh": 0,
+      "name": "Plane_0"
+    },
+    {
+      "mesh": 1,
+      "name": "Plane_1"
+    },
+    {
+      "mesh": 2,
+      "name": "Plane_2"
+    }
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "Sketchfab_Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ]
+}

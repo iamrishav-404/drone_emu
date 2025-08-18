@@ -1,0 +1,11 @@
+Model Information:
+* title:	Natural ground #1 [LowPoly]
+* source:	https://sketchfab.com/3d-models/natural-ground-1-lowpoly-5973464caa384e9cb0dd901cb16c69a8
+* author:	John Trent (https://sketchfab.com/brjce)
+
+Model License:
+* license type:	CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+* requirements:	Author must be credited. No commercial use.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Natural ground #1 [LowPoly]" (https://sketchfab.com/3d-models/natural-ground-1-lowpoly-5973464caa384e9cb0dd901cb16c69a8) by John Trent (https://sketchfab.com/brjce) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test Page - Webhook Latency</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧪</text></svg>" />
+    <style>
+        body { 
+            font-family: system-ui, sans-serif; 
+            background: #0b0f14; 
+            color: #e6edf3; 
+            padding: 20px; 
+            margin: 0;
+        }
+        .status { 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+            border: 1px solid #2b3443;
+        }
+        .success { background: #0d4d0d; color: #4ade80; }
+        .error { background: #4d0d0d; color: #ef4444; }
+        .info { background: #0d2d4d; color: #60a5fa; }
+        .test-links { margin: 20px 0; }
+        .test-links a { 
+            display: inline-block; 
+            margin: 5px 10px 5px 0; 
+            padding: 10px 15px; 
+            background: #1e293b; 
+            color: #60a5fa; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            border: 1px solid #2b3443;
+        }
+        .test-links a:hover { background: #334155; }
+    </style>
+</head>
+<body>
+    <h1>🚁 Webhook Latency Test</h1>
+    
+    <div class="status info">
+        <strong>Server Status:</strong> <span id="serverStatus">Checking...</span>
+    </div>
+    
+    <div class="status info">
+        <strong>THREE.js Status:</strong> <span id="threeStatus">Checking...</span>
+    </div>
+    
+    <div class="status info">
+        <strong>WebSocket Support:</strong> <span id="wsStatus">Checking...</span>
+    </div>
+    
+    <div class="test-links">
+        <h3>Test Pages:</h3>
+        <a href="/receiver.html">🖥️ Receiver (PC)</a>
+        <a href="/controller.html">📱 Controller (Phone)</a>
+    </div>
+    
+    <div class="status info">
+        <h3>📊 Connection Info:</h3>
+        <p><strong>Server URL:</strong> <code>http://localhost:3000</code></p>
+        <p><strong>WebSocket URL:</strong> <code>ws://localhost:3000</code></p>
+        <p><strong>Your IP for phone:</strong> <code id="ipAddress">Loading...</code></p>
+    </div>
+    
+    <div class="status info">
+        <h3>🔧 Troubleshooting:</h3>
+        <ol>
+            <li>Make sure the server is running with <code>npm start</code></li>
+            <li>Check that ports 3000 is not blocked by firewall</li>
+            <li>For phone connection, use your PC's local IP address instead of localhost</li>
+            <li>Open browser developer tools (F12) to see detailed error messages</li>
+        </ol>
+    </div>
+
+    <script>
+        // Test server connectivity
+        fetch('/controller.html')
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('serverStatus').textContent = '✅ Server is running';
+                    document.getElementById('serverStatus').parentElement.className = 'status success';
+                } else {
+                    document.getElementById('serverStatus').textContent = '❌ Server error: ' + response.status;
+                    document.getElementById('serverStatus').parentElement.className = 'status error';
+                }
+            })
+            .catch(error => {
+                document.getElementById('serverStatus').textContent = '❌ Server not reachable: ' + error.message;
+                document.getElementById('serverStatus').parentElement.className = 'status error';
+            });
+
+        // Test THREE.js
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js';
+        script.onload = () => {
+            if (typeof THREE !== 'undefined') {
+                document.getElementById('threeStatus').textContent = `✅ THREE.js loaded (version ${THREE.REVISION})`;
+                document.getElementById('threeStatus').parentElement.className = 'status success';
+            } else {
+                document.getElementById('threeStatus').textContent = '❌ THREE.js loaded but not accessible';
+                document.getElementById('threeStatus').parentElement.className = 'status error';
+            }
+        };
+        script.onerror = () => {
+            document.getElementById('threeStatus').textContent = '❌ Failed to load THREE.js from CDN';
+            document.getElementById('threeStatus').parentElement.className = 'status error';
+        };
+        document.head.appendChild(script);
+
+        // Test WebSocket support
+        if (typeof WebSocket !== 'undefined') {
+            document.getElementById('wsStatus').textContent = '✅ WebSocket supported';
+            document.getElementById('wsStatus').parentElement.className = 'status success';
+        } else {
+            document.getElementById('wsStatus').textContent = '❌ WebSocket not supported';
+            document.getElementById('wsStatus').parentElement.className = 'status error';
+        }
+
+        // Try to get local IP (approximation)
+        const ipEl = document.getElementById('ipAddress');
+        ipEl.textContent = 'Use your PC\'s local IP address (check ipconfig/ifconfig)';
+    </script>
+</body>
+</html>

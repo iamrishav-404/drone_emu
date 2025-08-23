@@ -17,7 +17,10 @@ const Controller = () => {
   const intervalRef = useRef(null);
 
   useEffect(() => {
-    setWsUrl(`ws://${window.location.hostname}:3000`);
+    // Use environment variable for webhook URL
+    const webhookUrl = process.env.REACT_APP_WEBHOOK_URL || 'http://localhost:3000';
+    const wsUrl = webhookUrl.replace(/^http/, 'ws');
+    setWsUrl(wsUrl);
     
     if (padLeftRef.current && stickLeftRef.current) {
       makePad(padLeftRef.current, stickLeftRef.current, (nx, ny) => {

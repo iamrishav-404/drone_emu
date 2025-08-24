@@ -712,7 +712,6 @@ class MainScene {
     
     // Orient strip to connect the hoops
     const direction = new THREE.Vector3(pos2.x - pos1.x, pos2.y - pos1.y, pos2.z - pos1.z);
-    const axis = new THREE.Vector3(0, 1, 0);
     strip.lookAt(new THREE.Vector3().addVectors(strip.position, direction));
     strip.rotateX(Math.PI / 2);
     
@@ -798,66 +797,6 @@ class MainScene {
     }
     
     console.log(`Collision with ${collider.type} at distance ${dronePosition.distanceTo(collider.position).toFixed(2)}`);
-  }
-
-  // Create connecting strip between hoops
-  createConnectingStrip(pos1, pos2) {
-    const distance = Math.sqrt(
-      Math.pow(pos2.x - pos1.x, 2) +
-      Math.pow(pos2.y - pos1.y, 2) +
-      Math.pow(pos2.z - pos1.z, 2)
-    );
-    
-    // Smaller, thinner strips
-    const stripGeometry = new THREE.CylinderGeometry(0.05, 0.05, distance, 6);
-    const stripMaterial = new THREE.MeshPhongMaterial({
-      color: 0x4444ff,
-      emissive: 0x001122,
-      transparent: true,
-      opacity: 0.6
-    });
-    
-    const strip = new THREE.Mesh(stripGeometry, stripMaterial);
-    
-    // Position strip between two hoops
-    strip.position.set(
-      (pos1.x + pos2.x) / 2,
-      (pos1.y + pos2.y) / 2,
-      (pos1.z + pos2.z) / 2
-    );
-    
-    // Orient strip to connect the hoops
-    const direction = new THREE.Vector3(pos2.x - pos1.x, pos2.y - pos1.y, pos2.z - pos1.z);
-    const axis = new THREE.Vector3(0, 1, 0);
-    strip.lookAt(new THREE.Vector3().addVectors(strip.position, direction));
-    strip.rotateX(Math.PI / 2);
-    
-    this.scene.add(strip);
-    this.raceTrack.strips.push(strip);
-    this.objects.push({ mesh: strip, type: 'track-strip' });
-  }
-
-  // Check hoop collision and race progress with varied hoop sizes
-  checkHoopCollisions() {
-    if (!this.droneModel || this.raceTrack.hoops.length === 0) return;
-    
-    const dronePosition = this.droneState.pos;
-    const currentHoop = this.raceTrack.hoops[this.raceTrack.currentCheckpoint];
-    
-    if (currentHoop && !currentHoop.passed) {
-      const distance = dronePosition.distanceTo(new THREE.Vector3(
-        currentHoop.position.x,
-        currentHoop.position.y,
-        currentHoop.position.z
-      ));
-      
-      // Dynamic collision detection based on hoop bounding sphere
-      const collisionRadius = currentHoop.boundingSphere.radius;
-      
-      if (distance < collisionRadius) {
-        this.passedThroughHoop(currentHoop);
-      }
-    }
   }
 
   // Handle hoop passage
@@ -1791,7 +1730,6 @@ class MainScene {
       // Progressive attitude smoothing - faster response at higher stick deflection
       const pitchRate = 3 + pitchMagnitude * 8; 
       const rollRate = 3 + rollMagnitude * 8;
-      const yawRate = 2 + Math.abs(yawIn) * 6; 
       
       this.droneState.pitch += (desiredPitch - this.droneState.pitch) * Math.min(1, dt * pitchRate);
       this.droneState.roll += (desiredRoll - this.droneState.roll) * Math.min(1, dt * rollRate);
@@ -1806,9 +1744,6 @@ class MainScene {
       const upAccel = thrIn * this.params.lift - this.params.gravity;
 
       // Progressive acceleration based on actual tilt angle and stick input
-      const currentPitchMag = Math.abs(this.droneState.pitch);
-      const currentRollMag = Math.abs(this.droneState.roll);
-      
       // Exponential acceleration curve - realistic drone physics
       const pitchAccelMultiplier = 1 + pitchMagnitude * 2; 
       const rollAccelMultiplier = 1 + rollMagnitude * 2;
@@ -1876,9 +1811,6 @@ class MainScene {
         this.directionalLight.shadow.camera.updateMatrixWorld();
       }
 
-      // Spin props proportional to throttle
-      const spin = target.throttle > 0.01 ? now * 0.02 + thrIn * 10 : 0;
-      
       // Realistic propeller RPM calculation
       this.updatePropellerRPM(target.throttle, dt);
       const propRotationSpeed = (this.propState.currentRPM / this.params.maxRPM) * 0.3;

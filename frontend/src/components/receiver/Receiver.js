@@ -28,8 +28,10 @@ const Receiver = () => {
 
 
   useEffect(() => {
-    // Set default WebSocket URL
-    setWsUrl(`ws://${window.location.hostname}:3000`);
+    // Set WebSocket URL based on environment
+    const baseUrl = process.env.REACT_APP_WEBHOOK_URL || `http://${window.location.hostname}:3000`;
+    const wsUrl = baseUrl.replace('http://', 'ws://').replace('https://', 'wss://');
+    setWsUrl(wsUrl);
   }, []);
 
   useEffect(() => {

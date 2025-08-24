@@ -1714,7 +1714,7 @@ class MainScene {
       // Process inputs with deadzone + stronger expo for realistic feel  
       const yawIn = this.expo(this.applyDeadzone(target.yaw), 0.5); 
       const pitIn = this.expo(this.applyDeadzone(target.pitch), 0.4); 
-      const rolIn = this.expo(this.applyDeadzone(-target.roll), 0.4); 
+      const rolIn = this.expo(this.applyDeadzone(target.roll), 0.4); 
       const thrIn = Math.max(0, Math.min(1, target.throttle));
 
 

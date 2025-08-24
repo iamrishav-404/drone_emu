@@ -7,6 +7,7 @@ const Controller = () => {
   const [status, setStatus] = useState('disconnected');
   const [wsUrl, setWsUrl] = useState('');
   const [room, setRoom] = useState('A');
+  const [axes, setAxes] = useState({ throttle: 0, yaw: 0, pitch: 0, roll: 0 });
   
   const socketRef = useRef(null);
   const padLeftRef = useRef(null);
@@ -28,6 +29,7 @@ const Controller = () => {
         const dz = v => Math.abs(v) < dead ? 0 : v;
         axesRef.current.yaw = dz(nx);
         axesRef.current.throttle = Math.max(0, Math.min(1, 0.5 - (ny * 0.5)));
+        setAxes(prev => ({ ...prev, yaw: axesRef.current.yaw, throttle: axesRef.current.throttle }));
       });
     }
     
@@ -37,6 +39,7 @@ const Controller = () => {
         const dz = v => Math.abs(v) < dead ? 0 : v;
         axesRef.current.roll = dz(nx);
         axesRef.current.pitch = dz(-ny); 
+        setAxes(prev => ({ ...prev, roll: axesRef.current.roll, pitch: axesRef.current.pitch }));
       });
     }
 
@@ -53,64 +56,168 @@ const Controller = () => {
   const makePad = (padEl, stickEl, onMove) => {
     const rect = () => padEl.getBoundingClientRect();
     let activeId = null;
+    let isActive = false;
+    
+    // Add realistic spring-back animation
+    const springBack = (targetX = 0, targetY = 0, duration = 200) => {
+      const startTime = performance.now();
+      const currentRect = stickEl.getBoundingClientRect();
+      const padRect = rect();
+      const startX = (currentRect.left + 45 - padRect.left - padRect.width/2) / (Math.min(padRect.width, padRect.height)/2 - 45);
+      const startY = (currentRect.top + 45 - padRect.top - padRect.height/2) / (Math.min(padRect.width, padRect.height)/2 - 45);
+      
+      const animate = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function for spring-like behavior
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        
+        const currentX = startX + (targetX - startX) * easeOut;
+        const currentY = startY + (targetY - startY) * easeOut;
+        
+        setStick(currentX, currentY);
+        onMove(currentX, currentY);
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      };
+      
+      requestAnimationFrame(animate);
+    };
 
     function setStick(nX, nY) {
       const r = rect();
       const cx = r.width/2, cy = r.height/2;
       const maxR = Math.min(cx, cy) - 45;
-      const px = cx + nX * maxR - 40;
-      const py = cy + nY * maxR - 40;
+      const px = cx + nX * maxR - 45; // Adjusted for new stick size
+      const py = cy + nY * maxR - 45;
       stickEl.style.left = px + 'px';
       stickEl.style.top = py + 'px';
+      
+      // Add visual feedback based on stick position
+      const intensity = Math.min(Math.hypot(nX, nY), 1);
+      stickEl.style.transform = `scale(${0.98 + intensity * 0.04}) translateZ(${intensity * 2}px)`;
     }
 
     function handle(e) {
       const p = e.changedTouches ? e.changedTouches[0] : e;
       if (activeId !== null && e.changedTouches && p.identifier !== activeId) return;
+      
+      // Add haptic feedback on touch (if supported)
+      if (navigator.vibrate && e.type === 'touchstart') {
+        navigator.vibrate(10);
+      }
+      
       const r = rect();
       const x = (p.clientX - r.left) - r.width/2;
       const y = (p.clientY - r.top) - r.height/2;
-      const max = Math.min(r.width, r.height)/2 - 10;
+      const max = Math.min(r.width, r.height)/2 - 45; // Adjusted for new stick size
       let nX = x / max, nY = y / max;
       const len = Math.hypot(nX, nY);
-      if (len > 1) { nX /= len; nY /= len; }
+      
+      // Smooth circular boundary with slight resistance near edge
+      if (len > 1) { 
+        const resistance = 0.95; // Slightly inside the boundary
+        nX = (nX / len) * resistance; 
+        nY = (nY / len) * resistance; 
+      }
+      
+      // Apply deadzone smoothing
+      const deadzone = 0.08;
+      const adjustedLen = Math.max(0, len - deadzone) / (1 - deadzone);
+      if (len > deadzone) {
+        const factor = adjustedLen / len;
+        nX *= factor;
+        nY *= factor;
+      } else {
+        nX = 0;
+        nY = 0;
+      }
+      
       onMove(nX, nY);
       setStick(nX, nY);
     }
 
     function reset() {
-      onMove(0, 0);
-      setStick(0, 0);
+      isActive = false;
       activeId = null;
+      
+      // Add haptic feedback on release (if supported)
+      if (navigator.vibrate) {
+        navigator.vibrate(5);
+      }
+      
+      // Smooth spring-back to center
+      springBack(0, 0);
     }
 
+    // Enhanced event handlers with better touch support
     padEl.addEventListener('pointerdown', (e) => {
-      activeId = 'mouse';
-      padEl.setPointerCapture(e.pointerId);
-      handle(e);
+      if (!isActive) {
+        isActive = true;
+        activeId = 'pointer';
+        padEl.setPointerCapture(e.pointerId);
+        stickEl.style.cursor = 'grabbing';
+        handle(e);
+      }
     });
-    padEl.addEventListener('pointermove', (e) => activeId && handle(e));
-    padEl.addEventListener('pointerup', reset);
-    padEl.addEventListener('pointercancel', reset);
+    
+    padEl.addEventListener('pointermove', (e) => {
+      if (activeId === 'pointer') handle(e);
+    });
+    
+    padEl.addEventListener('pointerup', (e) => {
+      if (activeId === 'pointer') {
+        stickEl.style.cursor = 'grab';
+        reset();
+      }
+    });
+    
+    padEl.addEventListener('pointercancel', (e) => {
+      if (activeId === 'pointer') {
+        stickEl.style.cursor = 'grab';
+        reset();
+      }
+    });
 
+    // Touch events for mobile
     padEl.addEventListener('touchstart', (e) => { 
-      activeId = e.changedTouches[0].identifier; 
-      handle(e); 
+      if (!isActive) {
+        isActive = true;
+        activeId = e.changedTouches[0].identifier;
+        handle(e);
+      }
     }, {passive: false});
+    
     padEl.addEventListener('touchmove', (e) => { 
-      e.preventDefault(); 
-      handle(e); 
+      if (activeId !== null) {
+        e.preventDefault();
+        handle(e);
+      }
     }, {passive: false});
-    padEl.addEventListener('touchend', reset);
+    
+    padEl.addEventListener('touchend', (e) => {
+      const touch = Array.from(e.changedTouches).find(t => t.identifier === activeId);
+      if (touch) {
+        reset();
+      }
+    });
+    
     padEl.addEventListener('touchcancel', reset);
   };
 
   const connect = () => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) return;
     
+    console.log('Attempting to connect to:', wsUrl);
+    setStatus('connecting');
+    
     socketRef.current = new WebSocket(wsUrl);
     
     socketRef.current.onopen = () => {
+      console.log('WebSocket connected successfully');
       setStatus('connected');
       socketRef.current.send(JSON.stringify({ 
         type: 'hello', 
@@ -132,7 +239,7 @@ const Controller = () => {
     
     socketRef.current.onmessage = (e) => {
       const msg = JSON.parse(e.data);
-      
+      console.log('Received message:', msg);
 
       if (msg.type === 'ping') {
         socketRef.current.send(JSON.stringify({ 
@@ -142,7 +249,8 @@ const Controller = () => {
       }
     };
     
-    socketRef.current.onclose = () => {
+    socketRef.current.onclose = (e) => {
+      console.log('WebSocket closed:', e.code, e.reason);
       setStatus('disconnected');
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -150,7 +258,8 @@ const Controller = () => {
       }
     };
     
-    socketRef.current.onerror = () => {
+    socketRef.current.onerror = (error) => {
+      console.error('WebSocket error:', error);
       setStatus('error');
     };
   };
@@ -158,6 +267,7 @@ const Controller = () => {
   const getStatusClass = () => {
     switch (status) {
       case 'connected': return 'status-connected';
+      case 'connecting': return 'status-connecting';
       case 'error': return 'status-error';
       default: return 'status-disconnected';
     }
@@ -166,31 +276,48 @@ const Controller = () => {
   return (
     <div className="controller">
       <div className="bar">
-        <label>WS:</label>
-        <input 
-          value={wsUrl}
-          onChange={(e) => setWsUrl(e.target.value)}
-          size="24" 
-        />
-        <label>Room:</label>
-        <input 
-          value={room}
-          onChange={(e) => setRoom(e.target.value)}
-          size="4" 
-        />
-        <button onClick={connect}>Connect</button>
+        <div className="power-section">
+          <div className="power-button"></div>
+        </div>
+        
+        <div className="controls-section">
+          <label>WS:</label>
+          <input 
+            value={wsUrl}
+            onChange={(e) => setWsUrl(e.target.value)}
+            size="20" 
+          />
+          <label>Room:</label>
+          <input 
+            value={room}
+            onChange={(e) => setRoom(e.target.value)}
+            size="4" 
+          />
+          <button onClick={connect}>Connect</button>
+        </div>
+        
         <span id="status" className={getStatusClass()}>{status}</span>
       </div>
 
       <div className="row">
-        <div className="pad" ref={padLeftRef}>
-          <div className="stick" ref={stickLeftRef}></div>
+        <div className="joystick-section">
+          <div className="joystick-container">
+            <div className="joystick-label-left">Throttle / Yaw</div>
+            <div className="pad" ref={padLeftRef}>
+              <div className="stick" ref={stickLeftRef}></div>
+            </div>
+          </div>
+          
+          <div className="joystick-container">
+            <div className="pad" ref={padRightRef}>
+              <div className="stick" ref={stickRightRef}></div>
+            </div>
+            <div className="joystick-label-right">Pitch / Roll</div>
+          </div>
         </div>
-        <div className="pad" ref={padRightRef}>
-          <div className="stick" ref={stickRightRef}></div>
-        </div>
+        
+
       </div>
-      <div className="hint">Left: Throttle/Yaw &nbsp; | &nbsp; Right: Pitch/Roll</div>
     </div>
   );
 };

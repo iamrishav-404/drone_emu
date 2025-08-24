@@ -1,97 +1,485 @@
+/* Global body styles for mobile fullscreen */
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-text-size-adjust: none;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* Force landscape layout without rotation transform */
 .controller {
   margin: 0;
-  font-family: system-ui, sans-serif;
-  background: #0b0f14;
+  font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
   color: #e6edf3;
   height: 100vh;
-  width: 100%;
+  width: 100vw;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  /* Optimize for landscape mode */
+  display: flex;
+  flex-direction: column;
+  /* Add controller body styling */
+  border: 2px solid #333;
+  border-radius: 20px;
+  box-sizing: border-box;
+}
+
+/* Add controller body texture */
+.controller::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.02) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255,255,255,0.01) 0%, transparent 50%),
+    linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.005) 50%, transparent 60%);
+  pointer-events: none;
 }
 
 .bar {
-  padding: 12px;
+  padding: 8px 16px;
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
-  background: #111722;
+  justify-content: space-between;
+  background: linear-gradient(180deg, #2a2a2a 0%, #1f1f1f 100%);
   position: sticky;
   top: 0;
   overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  border-bottom: 1px solid #333;
+  min-height: 50px;
+  flex-shrink: 0;
+}
+
+/* Add power button and status area */
+.power-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.power-button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #333, #111);
+  border: 2px solid #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 
+    inset 0 2px 4px rgba(255,255,255,0.1),
+    0 2px 8px rgba(0,0,0,0.3);
+}
+
+.power-button::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0f0;
+  box-shadow: 0 0 6px #0f0;
+}
+
+.controls-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 input,
 button {
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid #2b3443;
-  background: #0e1520;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #404040;
+  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
   color: #e6edf3;
+  box-shadow: 
+    inset 0 2px 4px rgba(0,0,0,0.2),
+    0 1px 2px rgba(255,255,255,0.1);
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 button {
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 12px;
 }
 
 button:hover {
-  background: #1a2332;
+  background: linear-gradient(145deg, #353535, #252525);
+  box-shadow: 
+    inset 0 2px 6px rgba(0,0,0,0.3),
+    0 2px 4px rgba(255,255,255,0.15);
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: 
+    inset 0 3px 8px rgba(0,0,0,0.4),
+    0 1px 2px rgba(255,255,255,0.1);
 }
 
 .row {
   display: flex;
-  justify-content: space-around;
-  margin-top: 16px;
-  gap: 12px;
-  padding: 0 12px;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: stretch;
+  flex: 1;
+  gap: 20px;
+  padding: 20px;
+  min-height: 0;
+  /* Vertical joystick layout with side panel */
+  max-height: calc(100vh - 70px);
+  width: 100%;
+  box-sizing: border-box;
+  /* Add bottom padding to prevent sticking to screen bottom */
+  padding-bottom: 30px;
+}
+
+/* Left section containing both joysticks vertically */
+.joystick-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  flex: 1;
+  height: 100%;
+  padding: 40px 0;
+  /* Ensure perfect vertical alignment */
+  width: 200px;
+}
+
+/* Joystick container for proper label positioning */
+.joystick-container {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  /* Ensure both containers have same width for alignment */
+  width: 100%;
+  /* Add proper spacing between joysticks and from edges */
+  margin: 20px 0;
+  padding: 10px;
+  gap: 20px;
+}
+
+/* Label on left side of first joystick */
+.joystick-label-left {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.3);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+/* Label on right side of second joystick */
+.joystick-label-right {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.3);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
 }
 
 .pad {
-  width: 44vw;
-  height: 44vw;
-  max-width: 360px;
-  max-height: 360px;
-  background: #0e1520;
-  border: 2px solid #2b3443;
-  border-radius: 20px;
+  /* Much bigger outer circle for maximum control area */
+  width: min(55vmin, 280px);
+  height: min(55vmin, 280px);
+  background: 
+    radial-gradient(circle at 30% 30%, #2a2a2a 0%, #1a1a1a 100%),
+    linear-gradient(145deg, #232323, #1a1a1a);
+  border: 3px solid #404040;
+  border-radius: 50%;
   position: relative;
   touch-action: none;
+  box-shadow: 
+    inset 0 8px 16px rgba(0,0,0,0.4),
+    inset 0 -8px 16px rgba(255,255,255,0.05),
+    0 8px 32px rgba(0,0,0,0.3),
+    0 0 0 1px rgba(255,255,255,0.08);
+  overflow: hidden;
+  flex-shrink: 0;
+  /* Perfect center alignment */
+  margin: 0 auto;
+}
+
+/* Add realistic controller pad texture */
+.pad::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    repeating-conic-gradient(from 0deg at 50% 50%, 
+      transparent 0deg, 
+      rgba(255,255,255,0.02) 0.5deg, 
+      transparent 1deg),
+    radial-gradient(circle at 50% 50%, 
+      rgba(255,255,255,0.03) 0%, 
+      transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Add center dead zone indicator */
+.pad::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 30px;
+  height: 30px;
+  transform: translate(-50%, -50%);
+  border: 1px dashed rgba(255,255,255,0.2);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .stick {
-  width: 80px;
-  height: 80px;
+  width: 85px;
+  height: 85px;
   border-radius: 50%;
-  background: #1b2636;
-  border: 2px solid #35455e;
+  background: 
+    radial-gradient(circle at 30% 30%, #4a4a4a 0%, #2a2a2a 70%),
+    linear-gradient(145deg, #3a3a3a, #252525);
+  border: 2px solid #555;
   position: absolute;
-  left: calc(50% - 40px);
-  top: calc(50% - 40px);
+  left: calc(50% - 42.5px);
+  top: calc(50% - 42.5px);
   transition: none;
+  cursor: grab;
+  box-shadow: 
+    0 6px 20px rgba(0,0,0,0.4),
+    inset 0 2px 4px rgba(255,255,255,0.15),
+    inset 0 -2px 4px rgba(0,0,0,0.2),
+    0 0 0 1px rgba(255,255,255,0.1);
+  transform-style: preserve-3d;
+}
+
+.stick:active {
+  cursor: grabbing;
+  box-shadow: 
+    0 3px 12px rgba(0,0,0,0.5),
+    inset 0 3px 6px rgba(255,255,255,0.2),
+    inset 0 -3px 6px rgba(0,0,0,0.3),
+    0 0 0 1px rgba(255,255,255,0.15);
+  transform: scale(0.98) translateZ(2px);
+}
+
+/* Add realistic stick texture and grip */
+.stick::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  bottom: 15px;
+  background: 
+    radial-gradient(circle at 50% 50%, 
+      rgba(255,255,255,0.1) 0%, 
+      transparent 70%),
+    conic-gradient(from 0deg, 
+      transparent 0deg, 
+      rgba(255,255,255,0.03) 45deg, 
+      transparent 90deg,
+      rgba(255,255,255,0.03) 135deg,
+      transparent 180deg,
+      rgba(255,255,255,0.03) 225deg,
+      transparent 270deg,
+      rgba(255,255,255,0.03) 315deg,
+      transparent 360deg);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Add center dot for stick */
+.stick::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, #666 0%, #333 100%);
+  border-radius: 50%;
+  box-shadow: 
+    inset 0 1px 2px rgba(0,0,0,0.3),
+    0 1px 1px rgba(255,255,255,0.2);
+  pointer-events: none;
+}
+
+/* Side panel like in the image */
+.side-panel {
+  width: 120px;
+  height: 80%;
+  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+  border: 2px solid #404040;
+  border-radius: 15px;
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 
+    inset 0 4px 8px rgba(0,0,0,0.3),
+    0 4px 16px rgba(0,0,0,0.2);
+}
+
+.telemetry {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.data-row {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #0ff;
+  text-align: center;
+  padding: 4px 8px;
+  background: rgba(0,255,255,0.1);
+  border-radius: 4px;
+  border: 1px solid rgba(0,255,255,0.2);
 }
 
 .hint {
   text-align: center;
-  opacity: 0.7;
-  font-size: 14px;
-  margin-top: 6px;
-  padding: 0 12px;
+  opacity: 0.8;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 20px;
+  padding: 8px 12px;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  /* Position below joystick with proper spacing */
+  width: 100%;
+  display: block;
+  background: rgba(255,255,255,0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Center display area for landscape mode */
+.center-display {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 80px;
+  background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+  border: 2px solid #333;
+  border-radius: 8px;
+  box-shadow: 
+    inset 0 4px 8px rgba(0,0,0,0.3),
+    0 4px 16px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.center-display h3 {
+  margin: 0 0 4px 0;
+  font-size: 10px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.center-display .values {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  color: #0ff;
+  line-height: 1.2;
+  text-align: center;
 }
 
 #status {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: bold;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 12px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .status-connected {
-  background: #0d4d0d;
+  background: linear-gradient(135deg, #0d5d0d, #0a4a0a);
   color: #4ade80;
+  box-shadow: 
+    inset 0 2px 4px rgba(0,0,0,0.2),
+    0 0 10px rgba(74, 222, 128, 0.2);
+}
+
+.status-connecting {
+  background: linear-gradient(135deg, #5d5d0d, #4a4a0a);
+  color: #fbbf24;
+  box-shadow: 
+    inset 0 2px 4px rgba(0,0,0,0.2),
+    0 0 10px rgba(251, 191, 36, 0.2);
 }
 
 .status-disconnected {
-  background: #4d0d0d;
+  background: linear-gradient(135deg, #5d0d0d, #4a0a0a);
   color: #ef4444;
+  box-shadow: 
+    inset 0 2px 4px rgba(0,0,0,0.2),
+    0 0 10px rgba(239, 68, 68, 0.2);
 }
 
 .status-error {
-  background: #4d1d0d;
+  background: linear-gradient(135deg, #5d2d0d, #4a220a);
   color: #f59e0b;
+  box-shadow: 
+    inset 0 2px 4px rgba(0,0,0,0.2),
+    0 0 10px rgba(245, 158, 11, 0.2);
 }

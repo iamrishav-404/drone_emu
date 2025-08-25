@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import './Controller.css';
+import { buildWebSocketURL } from '../../utils/networkUtils';
 
 const Controller = () => {
   const [status, setStatus] = useState('disconnected');
@@ -18,17 +19,27 @@ const Controller = () => {
   const intervalRef = useRef(null);
 
   useEffect(() => {
-    // Use environment variable for webhook URL
-    const webhookUrl = process.env.REACT_APP_WEBHOOK_URL || 'http://localhost:3000';
-    const wsUrl = webhookUrl.replace(/^http/, 'ws');
-    setWsUrl(wsUrl);
+    // Initialize with dynamic IP detection
+    const initializeWebSocketURL = async () => {
+      try {
+        const dynamicWsUrl = await buildWebSocketURL(3000);
+        setWsUrl(dynamicWsUrl);
+        console.log('Dynamic WebSocket URL initialized:', dynamicWsUrl);
+      } catch (error) {
+        console.error('Failed to initialize dynamic WebSocket URL, falling back to localhost:', error);
+        setWsUrl('ws://localhost:3000');
+      }
+    };
+    
+    initializeWebSocketURL();
     
     if (padLeftRef.current && stickLeftRef.current) {
       makePad(padLeftRef.current, stickLeftRef.current, (nx, ny) => {
         const dead = 0.05;
         const dz = v => Math.abs(v) < dead ? 0 : v;
-        axesRef.current.yaw = dz(nx);
-        axesRef.current.throttle = Math.max(0, Math.min(1, 0.5 - (ny * 0.5)));
+        // Left stick: X = Throttle (up/down), Y = Yaw (rotation)
+        axesRef.current.throttle = Math.max(0, Math.min(1, 0.5 + (nx * 0.5))); 
+        axesRef.current.yaw = dz(ny); 
         setAxes(prev => ({ ...prev, yaw: axesRef.current.yaw, throttle: axesRef.current.throttle }));
       });
     }
@@ -37,8 +48,9 @@ const Controller = () => {
       makePad(padRightRef.current, stickRightRef.current, (nx, ny) => {
         const dead = 0.05;
         const dz = v => Math.abs(v) < dead ? 0 : v;
-        axesRef.current.roll = dz(nx);
-        axesRef.current.pitch = dz(-ny); 
+        // Right stick: X = Pitch (forward/backward), Y = Roll (left/right)
+        axesRef.current.pitch = dz(nx); 
+        axesRef.current.roll = dz(-ny); 
         setAxes(prev => ({ ...prev, roll: axesRef.current.roll, pitch: axesRef.current.pitch }));
       });
     }
@@ -208,34 +220,40 @@ const Controller = () => {
     padEl.addEventListener('touchcancel', reset);
   };
 
-  const connect = () => {
+  const connect = async () => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) return;
     
-    console.log('Attempting to connect to:', wsUrl);
-    setStatus('connecting');
-    
-    socketRef.current = new WebSocket(wsUrl);
-    
-    socketRef.current.onopen = () => {
-      console.log('WebSocket connected successfully');
-      setStatus('connected');
-      socketRef.current.send(JSON.stringify({ 
-        type: 'hello', 
-        role: 'controller', 
-        room 
-      }));
+    try {
+      const dynamicWsUrl = await buildWebSocketURL(3000);
+      console.log('Attempting to connect to:', dynamicWsUrl);
+      setStatus('connecting');
       
-      //  sending controls at ~30Hz
-      intervalRef.current = setInterval(() => {
-        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-          socketRef.current.send(JSON.stringify({ 
-            type: 'control', 
-            room, 
-            axes: axesRef.current 
-          }));
-        }
-      }, 33);
-    };
+      socketRef.current = new WebSocket(dynamicWsUrl);
+      
+      socketRef.current.onopen = () => {
+        console.log('WebSocket connected successfully to:', dynamicWsUrl);
+        setStatus('connected');
+        socketRef.current.send(JSON.stringify({ 
+          type: 'hello', 
+          role: 'controller', 
+          room 
+        }));
+        
+        //  sending controls at ~30Hz
+        intervalRef.current = setInterval(() => {
+          if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+            socketRef.current.send(JSON.stringify({ 
+              type: 'control', 
+              room, 
+              axes: axesRef.current 
+            }));
+          }
+        }, 33);
+      };
+    } catch (error) {
+      console.error('Failed to get dynamic WebSocket URL:', error);
+      setStatus('error');
+    }
     
     socketRef.current.onmessage = (e) => {
       const msg = JSON.parse(e.data);

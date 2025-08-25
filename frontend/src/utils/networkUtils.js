@@ -36,32 +36,66 @@ export const getLocalNetworkIP = () => {
 
 export const buildWebSocketURL = async (defaultPort = 3000) => {
   try {
+    // Check for production webhook URL in environment variables
+    if (process.env.REACT_APP_WEBHOOK_URL) {
+      const backendUrl = process.env.REACT_APP_WEBHOOK_URL;
+      // Convert HTTPS to WSS for WebSocket connection
+      const wsUrl = backendUrl.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
+      return wsUrl;
+    }
+    
+    // Check for direct backend URL in environment variables
+    if (process.env.REACT_APP_BACKEND_URL) {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL;
+      const wsProtocol = backendUrl.startsWith('https:') ? 'wss:' : 'ws:';
+      // Remove http/https and replace with ws/wss
+      const wsUrl = backendUrl.replace(/^https?:/, wsProtocol);
+      return wsUrl;
+    }
+    
+    // If we're on Netlify, connect to the Render backend
+    if (window.location.hostname.includes('netlify.app')) {
+      return 'wss://drone-game-backend.onrender.com';
+    }
+    
+    // Determine WebSocket protocol based on current page protocol
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    
     // If we're already on a network IP (not localhost), use that
     if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      return `ws://${window.location.hostname}:${defaultPort}`;
+      return `${wsProtocol}//${window.location.hostname}:${defaultPort}`;
     }
     
     // Try to detect local network IP
     const localIP = await getLocalNetworkIP();
-    return `ws://${localIP}:${defaultPort}`;
+    return `${wsProtocol}//${localIP}:${defaultPort}`;
   } catch (error) {
     console.warn('Could not detect network IP, falling back to localhost:', error);
-    return `ws://localhost:${defaultPort}`;
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${wsProtocol}//localhost:${defaultPort}`;
   }
 };
 
 export const buildHTTPURL = async (defaultPort = 3000) => {
   try {
+    // Determine HTTP protocol based on current page protocol
+    const httpProtocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+    
     // If we're already on a network IP (not localhost), use that
     if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      return `http://${window.location.hostname}:${defaultPort}`;
+      // For production deployments, try to use the same host
+      if (window.location.hostname.includes('netlify.app') || window.location.hostname.includes('vercel.app') || window.location.hostname.includes('herokuapp.com')) {
+        return `${httpProtocol}//${window.location.hostname}:${defaultPort}`;
+      }
+      return `${httpProtocol}//${window.location.hostname}:${defaultPort}`;
     }
     
     // Try to detect local network IP
     const localIP = await getLocalNetworkIP();
-    return `http://${localIP}:${defaultPort}`;
+    return `${httpProtocol}//${localIP}:${defaultPort}`;
   } catch (error) {
     console.warn('Could not detect network IP, falling back to localhost:', error);
-    return `http://localhost:${defaultPort}`;
+    const httpProtocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+    return `${httpProtocol}//localhost:${defaultPort}`;
   }
 };

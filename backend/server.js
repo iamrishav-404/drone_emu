@@ -159,6 +159,15 @@ app.get('/logs', (req, res) => {
   `);
 });
 
+
+app.get("/get-ip", (req, res) => {
+  const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+  console.log("client ip::"+ip)
+  res.json({ ip });
+});
+
+
+
 /** rooms = Map<string, {controllers:Set<WS>, receivers:Set<WS>}> */
 const rooms = new Map();
 

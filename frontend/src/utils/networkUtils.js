@@ -36,11 +36,12 @@ export const getLocalNetworkIP = () => {
 
 export const buildWebSocketURL = async (defaultPort = 3000) => {
   try {
-    // Check for production webhook URL in environment variables
+    // Check for production webhook URL in environment variables first
     if (process.env.REACT_APP_WEBHOOK_URL) {
       const backendUrl = process.env.REACT_APP_WEBHOOK_URL;
       // Convert HTTPS to WSS for WebSocket connection
       const wsUrl = backendUrl.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
+      console.log("Using production WebSocket URL:", wsUrl);
       return wsUrl;
     }
     
@@ -50,11 +51,13 @@ export const buildWebSocketURL = async (defaultPort = 3000) => {
       const wsProtocol = backendUrl.startsWith('https:') ? 'wss:' : 'ws:';
       // Remove http/https and replace with ws/wss
       const wsUrl = backendUrl.replace(/^https?:/, wsProtocol);
+      console.log("Using configured backend WebSocket URL:", wsUrl);
       return wsUrl;
     }
     
     // If we're on Netlify, connect to the Render backend
     if (window.location.hostname.includes('netlify.app')) {
+      console.log("Detected Netlify deployment, using Render backend");
       return 'wss://drone-game-backend.onrender.com';
     }
     
@@ -66,8 +69,19 @@ export const buildWebSocketURL = async (defaultPort = 3000) => {
       return `${wsProtocol}//${window.location.hostname}:${defaultPort}`;
     }
     
-    // Try to detect local network IP
+    // For local development, try to detect the actual network IP
+    // The /get-ip endpoint won't work for this purpose as it returns ::1 (localhost)
+    // So we'll use WebRTC detection instead
+    console.log("Local development detected, using WebRTC IP detection");
     const localIP = await getLocalNetworkIP();
+    console.log("WebRTC detected IP:", localIP);
+    
+    // If WebRTC failed to find a network IP, fall back to localhost
+    if (localIP === 'localhost') {
+      console.log("No network IP found, using localhost");
+      return `${wsProtocol}//localhost:${defaultPort}`;
+    }
+    
     return `${wsProtocol}//${localIP}:${defaultPort}`;
   } catch (error) {
     console.warn('Could not detect network IP, falling back to localhost:', error);

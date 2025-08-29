@@ -483,3 +483,191 @@ button:active {
     inset 0 2px 4px rgba(0,0,0,0.2),
     0 0 10px rgba(245, 158, 11, 0.2);
 }
+
+/* WebRTC Controls */
+.webrtc-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 8px;
+}
+
+.connection-type-btn {
+  padding: 6px 12px;
+  background: linear-gradient(145deg, #2a1a4a, #1e1435);
+  border: 1px solid #4c1d95;
+  border-radius: 6px;
+  color: #c4b5fd;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.connection-type-btn:hover {
+  background: linear-gradient(145deg, #3730a3, #2563eb);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+.connection-type-btn.webrtc {
+  background: linear-gradient(145deg, #1a4a3a, #14352a);
+  border-color: #059669;
+  color: #6ee7b7;
+}
+
+.connection-type-btn.webrtc:hover {
+  background: linear-gradient(145deg, #047857, #065f46);
+}
+
+.webrtc-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.qr-scan-btn,
+.webrtc-connect-btn {
+  padding: 4px 8px;
+  background: linear-gradient(145deg, #374151, #1f2937);
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  color: #d1d5db;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.qr-scan-btn:hover,
+.webrtc-connect-btn:hover {
+  background: linear-gradient(145deg, #4b5563, #374151);
+  transform: scale(1.02);
+}
+
+.webrtc-connect-btn {
+  background: linear-gradient(145deg, #065f46, #047857);
+  border-color: #059669;
+  color: #6ee7b7;
+}
+
+.webrtc-connect-btn:hover {
+  background: linear-gradient(145deg, #047857, #065f46);
+}
+
+.webrtc-status {
+  font-size: 8px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.webrtc-status.connecting {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.webrtc-status.connected {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.webrtc-status.failed,
+.webrtc-status.disconnected {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+/* QR Scanner Modal */
+.qr-scanner-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.qr-scanner-content {
+  background: linear-gradient(145deg, #1f2937, #111827);
+  border: 2px solid #374151;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 90%;
+  width: 400px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+}
+
+.qr-scanner-content h3 {
+  color: #e5e7eb;
+  margin: 0 0 16px 0;
+  font-size: 18px;
+}
+
+.qr-scanner-content p {
+  color: #9ca3af;
+  margin: 0 0 16px 0;
+  font-size: 14px;
+}
+
+.qr-scanner-content textarea {
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  color: #e5e7eb;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 12px;
+  resize: vertical;
+}
+
+.qr-scanner-content textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.qr-scanner-buttons {
+  margin-top: 16px;
+}
+
+.qr-scanner-buttons button {
+  padding: 8px 16px;
+  background: linear-gradient(145deg, #374151, #1f2937);
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  color: #e5e7eb;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.qr-scanner-buttons button:hover {
+  background: linear-gradient(145deg, #4b5563, #374151);
+  transform: translateY(-1px);
+}
+
+.qr-result {
+  margin-top: 16px;
+  padding: 8px 12px;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid #10b981;
+  border-radius: 6px;
+  color: #6ee7b7;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}

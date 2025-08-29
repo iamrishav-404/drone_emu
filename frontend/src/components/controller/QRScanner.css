@@ -1,0 +1,387 @@
+.qr-scanner-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.qr-scanner-content {
+  background: #1a1a1a;
+  border-radius: 15px;
+  padding: 20px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 2px solid #00ff88;
+  box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+}
+
+.qr-scanner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #333;
+}
+
+.qr-scanner-header h3 {
+  color: #00ff88;
+  margin: 0;
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #ff4444;
+  font-size: 1.5em;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+  background: #ff4444;
+  color: white;
+}
+
+.error-message {
+  background: #ff4444;
+  color: white;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.permission-help {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  font-weight: normal;
+  text-align: left;
+}
+
+.permission-help p {
+  margin: 8px 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.retry-permission-btn {
+  background: #ffffff;
+  color: #ff4444;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.retry-permission-btn:hover {
+  background: #f0f0f0;
+  transform: translateY(-1px);
+}
+
+.scanner-section {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.qr-video {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #000;
+  border: 2px solid #333;
+}
+
+.scanning-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  border-radius: 10px;
+}
+
+.scan-frame {
+  width: 200px;
+  height: 200px;
+  border: 3px solid #00ff88;
+  border-radius: 15px;
+  position: relative;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.scan-frame::before,
+.scan-frame::after {
+  content: '';
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 4px solid #00ff88;
+}
+
+.scan-frame::before {
+  top: -4px;
+  left: -4px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.scan-frame::after {
+  bottom: -4px;
+  right: -4px;
+  border-left: none;
+  border-top: none;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+.scanning-overlay p {
+  color: #00ff88;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 8px 16px;
+  border-radius: 20px;
+  margin-top: 20px;
+  font-weight: bold;
+}
+
+.camera-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 10px;
+}
+
+.camera-loading p {
+  color: #00ff88;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #333;
+  border-left-color: #00ff88;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.camera-selector {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #2a2a2a;
+  border-radius: 10px;
+  border: 1px solid #333;
+}
+
+.camera-selector label {
+  color: #00ff88;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.camera-selector select {
+  background: #1a1a1a;
+  color: #00ff88;
+  border: 2px solid #333;
+  border-radius: 5px;
+  padding: 8px;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+}
+
+.camera-selector select:focus {
+  border-color: #00ff88;
+}
+
+.manual-input-section {
+  background: #2a2a2a;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
+  border: 1px solid #333;
+}
+
+.manual-input-section h4 {
+  color: #00ff88;
+  margin: 0 0 10px 0;
+  font-size: 1em;
+}
+
+.manual-input-section textarea {
+  width: 100%;
+  background: #1a1a1a;
+  color: white;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 10px;
+  font-family: monospace;
+  font-size: 12px;
+  resize: vertical;
+  outline: none;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.manual-input-section textarea:focus {
+  border-color: #00ff88;
+}
+
+.manual-input-section textarea::placeholder {
+  color: #666;
+}
+
+.manual-submit-btn {
+  background: #00ff88;
+  color: #000;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.manual-submit-btn:hover:not(:disabled) {
+  background: #00cc6a;
+  transform: translateY(-2px);
+}
+
+.manual-submit-btn:disabled {
+  background: #666;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.debug-info {
+  margin-top: 15px;
+  border-top: 1px solid #333;
+  padding-top: 10px;
+}
+
+.debug-info summary {
+  color: #00ff88;
+  cursor: pointer;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.debug-info summary:hover {
+  color: #00cc6a;
+}
+
+.debug-content {
+  background: #111;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #333;
+  margin-top: 5px;
+}
+
+.debug-content p {
+  margin: 5px 0;
+  font-size: 11px;
+  font-family: monospace;
+  color: #ccc;
+}
+
+.debug-content strong {
+  color: #00ff88;
+}
+
+.scanner-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.scanner-buttons button {
+  background: #333;
+  color: #00ff88;
+  border: 2px solid #00ff88;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.scanner-buttons button:hover {
+  background: #00ff88;
+  color: #000;
+  transform: translateY(-2px);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 600px) {
+  .qr-scanner-modal {
+    padding: 10px;
+  }
+  
+  .qr-scanner-content {
+    padding: 15px;
+    max-height: 95vh;
+  }
+  
+  .qr-video {
+    height: 250px;
+  }
+  
+  .scan-frame {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .scanner-buttons {
+    flex-direction: column;
+  }
+  
+  .scanner-buttons button {
+    width: 100%;
+  }
+}

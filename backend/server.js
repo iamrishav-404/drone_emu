@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
+const QRCode = require('qrcode');
 
 const app = express();
 app.use(express.static('public'));
@@ -166,6 +167,52 @@ app.get("/get-ip", (req, res) => {
   res.json({ ip });
 });
 
+// Generate QR code for WebRTC connection
+app.get("/generate-qr/:room", async (req, res) => {
+  try {
+    const room = req.params.room || 'A';
+    const serverUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Allow override with environment variable for ngrok
+    const backendUrl = process.env.BACKEND_URL || serverUrl;
+    
+    // Convert HTTP/HTTPS to WS/WSS appropriately
+    let websocketUrl;
+    if (backendUrl.startsWith('https://')) {
+      websocketUrl = backendUrl.replace('https://', 'wss://');
+    } else {
+      websocketUrl = backendUrl.replace('http://', 'ws://');
+    }
+    
+    // WebRTC connection info for QR code
+    const connectionInfo = {
+      type: 'webrtc_connection',
+      room: room,
+      websocket_url: websocketUrl,
+      ice_servers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    };
+    
+    console.log('Generated connection info:', connectionInfo);
+    
+    const qrCodeData = JSON.stringify(connectionInfo);
+    const qrCodeImage = await QRCode.toDataURL(qrCodeData);
+    
+    res.json({ 
+      qr_code: qrCodeImage,
+      connection_info: connectionInfo,
+      room: room
+    });
+    
+    addLog(`QR code generated for room ${room} with WebSocket URL: ${websocketUrl}`);
+  } catch (error) {
+    console.error('QR code generation error:', error);
+    res.status(500).json({ error: 'Failed to generate QR code' });
+  }
+});
+
 
 
 /** rooms = Map<string, {controllers:Set<WS>, receivers:Set<WS>}> */
@@ -229,6 +276,37 @@ wss.on('connection', (ws) => {
       addLog(`Pong received from controller in room ${ws.room}`);
       for (const rx of r.receivers) {
         if (rx.readyState === WebSocket.OPEN) rx.send(JSON.stringify(msg));
+      }
+      return;
+    }
+
+    // WebRTC Signaling: Handle WebRTC offer from receiver (PC)
+    if (msg.type === 'webrtc_offer' && ws.role === 'receiver' && ws.room) {
+      const r = getRoom(ws.room);
+      addLog(`WebRTC offer from receiver in room ${ws.room}`);
+      for (const ctrl of r.controllers) {
+        if (ctrl.readyState === WebSocket.OPEN) ctrl.send(JSON.stringify(msg));
+      }
+      return;
+    }
+
+    // WebRTC Signaling: Handle WebRTC answer from controller (Phone)
+    if (msg.type === 'webrtc_answer' && ws.role === 'controller' && ws.room) {
+      const r = getRoom(ws.room);
+      addLog(`WebRTC answer from controller in room ${ws.room}`);
+      for (const rx of r.receivers) {
+        if (rx.readyState === WebSocket.OPEN) rx.send(JSON.stringify(msg));
+      }
+      return;
+    }
+
+    // WebRTC Signaling: Handle ICE candidates from either side
+    if (msg.type === 'webrtc_ice' && ws.room) {
+      const r = getRoom(ws.room);
+      const targetRole = ws.role === 'controller' ? 'receivers' : 'controllers';
+      addLog(`ICE candidate from ${ws.role} in room ${ws.room}`);
+      for (const peer of r[targetRole]) {
+        if (peer.readyState === WebSocket.OPEN) peer.send(JSON.stringify(msg));
       }
       return;
     }

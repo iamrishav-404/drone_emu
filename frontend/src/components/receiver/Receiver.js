@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import MainScene from '../models/MainScene';
+import { WebRTCConnection } from '../../utils/webrtcUtils';
 import './Receiver.css';
 
 const Receiver = () => {
@@ -13,13 +14,20 @@ const Receiver = () => {
   const [wsStatus, setWsStatus] = useState('disconnected');
   const [latency, setLatency] = useState('--');
   const [wsUrl, setWsUrl] = useState('');
-  const [room, setRoom] = useState('A');
+  const [room, setRoom] = useState(() => Math.random().toString(36).substr(2, 8));
   const [droneLoaded, setDroneLoaded] = useState(false); 
   const [cameraMode, setCameraMode] = useState('chase'); 
   const [showDetails, setShowDetails] = useState(false); // Toggle for details panel 
   
+  // WebRTC states
+  const [connectionType, setConnectionType] = useState('websocket'); // 'websocket' or 'webrtc'
+  const [qrCodeImage, setQrCodeImage] = useState('');
+  const [showQrCode, setShowQrCode] = useState(false);
+  const [webrtcStatus, setWebrtcStatus] = useState('disconnected');
+  
   // WebSocket refs
   const socketRef = useRef(null);
+  const webrtcRef = useRef(null);
   const pingIntervalRef = useRef(null);
   const pingStartTimeRef = useRef(0);
   const latencyHistoryRef = useRef([]);
@@ -98,6 +106,79 @@ const Receiver = () => {
     };
   }, []);
 
+  // Generate QR Code for WebRTC connection
+  const generateQRCode = async () => {
+    try {
+      const baseUrl = process.env.REACT_APP_WEBHOOK_URL || `http://${window.location.hostname}:3000`;
+      const response = await fetch(`${baseUrl}/generate-qr/${room}`);
+      const data = await response.json();
+      
+      setQrCodeImage(data.qr_code);
+      setShowQrCode(true);
+      console.log('QR Code generated for room:', room);
+    } catch (error) {
+      console.error('Failed to generate QR code:', error);
+    }
+  };
+
+  // Initialize WebRTC connection (PC as initiator)
+  const initWebRTC = async () => {
+    try {
+      setWebrtcStatus('connecting');
+      webrtcRef.current = new WebRTCConnection(true); // PC is initiator
+      
+      // Setup WebRTC callbacks
+      webrtcRef.current.onConnectionStateChange = (state) => {
+        setWebrtcStatus(state);
+        if (state === 'connected') {
+          setConnectionType('webrtc');
+          setLatency('~20ms'); // WebRTC typical latency
+        }
+      };
+      
+      webrtcRef.current.onDataChannelMessage = (data) => {
+        handleControlData(data);
+      };
+      
+      // Connect to signaling server
+      await webrtcRef.current.connectToSignalingServer(wsUrl, room);
+      
+      // Create WebRTC offer
+      await webrtcRef.current.createOffer();
+      
+      console.log('WebRTC initialized, waiting for phone to connect...');
+    } catch (error) {
+      console.error('WebRTC initialization failed:', error);
+      setWebrtcStatus('failed');
+    }
+  };
+
+  // Handle control data from WebRTC or WebSocket
+  const handleControlData = (data) => {
+    if (data.type === 'control') {
+      lastMsgTimeRef.current = Date.now();
+      controlsRef.current = data.axes;
+      
+      if (sceneRef.current && droneLoaded) {
+        sceneRef.current.updateControls(data.axes);
+      }
+      
+      // Update position and attitude for display
+      if (sceneRef.current?.drone?.position) {
+        const pos = sceneRef.current.drone.position;
+        setDronePosition({ x: pos.x, y: pos.y, z: pos.z });
+      }
+      if (sceneRef.current?.drone?.rotation) {
+        const rot = sceneRef.current.drone.rotation;
+        setDroneAttitude({ 
+          yaw: (rot.y * 180 / Math.PI).toFixed(1), 
+          pitch: (rot.x * 180 / Math.PI).toFixed(1), 
+          roll: (rot.z * 180 / Math.PI).toFixed(1) 
+        });
+      }
+    }
+  };
+
   const connectWS = () => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) return;
     
@@ -138,15 +219,9 @@ const Receiver = () => {
         setLatency(`${latencyMs.toFixed(1)}ms (avg: ${avgLatency.toFixed(1)}ms)`);
       }
       
-      // Handle control messages
-      if (msg.type === 'control' && msg.room === room && msg.axes) {
-        controlsRef.current = msg.axes;
-        lastMsgTimeRef.current = performance.now();
-        
-        // Pass controls to the scene for physics simulation
-        if (sceneRef.current) {
-          sceneRef.current.updateControls(controlsRef.current, lastMsgTimeRef.current);
-        }
+      // Handle control messages using the unified handler
+      if (msg.type === 'control' && msg.room === room) {
+        handleControlData(msg);
       }
     };
     
@@ -253,6 +328,42 @@ const Receiver = () => {
               </>
             )}
           </div>
+        </div>
+
+        {/* WebRTC Connection Panel */}
+        <div className="webrtc-panel">
+          <div className="connection-type-toggle">
+            <button 
+              onClick={() => setConnectionType(connectionType === 'websocket' ? 'webrtc' : 'websocket')}
+              className={`connection-type-btn ${connectionType}`}
+            >
+              🔄 {connectionType === 'websocket' ? 'Switch to WebRTC' : 'Switch to WebSocket'}
+            </button>
+          </div>
+          
+          {connectionType === 'webrtc' && (
+            <div className="webrtc-controls">
+              <button onClick={generateQRCode} disabled={!isLoaded}>
+                📱 Generate QR Code
+              </button>
+              <button onClick={initWebRTC} disabled={!isLoaded}>
+                🚀 Start WebRTC
+              </button>
+              <span className={`webrtc-status ${webrtcStatus}`}>
+                WebRTC: {webrtcStatus}
+              </span>
+            </div>
+          )}
+
+          {/* QR Code Display */}
+          {showQrCode && qrCodeImage && (
+            <div className="qr-code-display">
+              <h3>📱 Scan with Phone Controller:</h3>
+              <img src={qrCodeImage} alt="QR Code for WebRTC connection" />
+              <p>Room: {room} | WebRTC P2P Connection</p>
+              <button onClick={() => setShowQrCode(false)}>Hide QR Code</button>
+            </div>
+          )}
         </div>
 
         {/* More Details Toggle */}

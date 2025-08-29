@@ -1,8 +1,10 @@
 
-
 import React, { useEffect, useRef, useState } from 'react';
 import './Controller.css';
+import './QRScanner.css';
 import { buildWebSocketURL } from '../../utils/networkUtils';
+import { WebRTCConnection, parseConnectionInfo } from '../../utils/webrtcUtils';
+import QRScanner from './QRScanner';
 
 const Controller = () => {
   const [status, setStatus] = useState('disconnected');
@@ -10,7 +12,14 @@ const Controller = () => {
   const [room, setRoom] = useState('A');
   const [axes, setAxes] = useState({ throttle: 0, yaw: 0, pitch: 0, roll: 0 });
   
+  // WebRTC state
+  const [connectionType, setConnectionType] = useState('websocket'); // 'websocket' or 'webrtc'
+  const [webrtcStatus, setWebrtcStatus] = useState('disconnected');
+  const [showQrScanner, setShowQrScanner] = useState(false);
+  const [qrScanResult, setQrScanResult] = useState(null);
+  
   const socketRef = useRef(null);
+  const webrtcRef = useRef(null);
   const padLeftRef = useRef(null);
   const stickLeftRef = useRef(null);
   const padRightRef = useRef(null);
@@ -220,6 +229,122 @@ const Controller = () => {
     padEl.addEventListener('touchcancel', reset);
   };
 
+  // QR Code Scanner (simple text input for now, can be upgraded to camera later)
+  const handleQrCodeInput = async (qrText) => {
+    try {
+      const connectionInfo = parseConnectionInfo(qrText);
+      if (connectionInfo) {
+        setQrScanResult(connectionInfo);
+        setRoom(connectionInfo.room);
+        setConnectionType('webrtc');
+        setShowQrScanner(false); // Close QR scanner
+        console.log('Valid QR code scanned:', connectionInfo);
+        
+        // Auto-initiate WebRTC connection
+        console.log('Auto-initiating WebRTC connection...');
+        await initWebRTCWithConnectionInfo(connectionInfo);
+      } else {
+        alert('Invalid QR code format');
+      }
+    } catch (error) {
+      console.error('QR code parsing error:', error);
+      alert('Failed to parse QR code');
+    }
+  };
+
+  // Initialize WebRTC connection with connection info
+  const initWebRTCWithConnectionInfo = async (connectionInfo) => {
+    try {
+      setWebrtcStatus('connecting');
+      console.log('Initializing WebRTC with info:', connectionInfo);
+      
+      webrtcRef.current = new WebRTCConnection(false); // Phone is not initiator
+      
+      // Setup WebRTC callbacks
+      webrtcRef.current.onConnectionStateChange = (state) => {
+        console.log('WebRTC state changed:', state);
+        setWebrtcStatus(state);
+        if (state === 'connected') {
+          setStatus('connected');
+          startSendingControls();
+        }
+      };
+      
+      webrtcRef.current.onDataChannelMessage = (message) => {
+        console.log('Received message from PC:', message);
+      };
+      
+      // Connect to signaling server
+      console.log('Connecting to signaling server:', connectionInfo.websocket_url, connectionInfo.room);
+      await webrtcRef.current.connectToSignalingServer(connectionInfo.websocket_url, connectionInfo.room);
+      
+      console.log('WebRTC controller initialized, waiting for PC connection...');
+    } catch (error) {
+      console.error('WebRTC initialization failed:', error);
+      setWebrtcStatus('failed');
+      alert('WebRTC connection failed: ' + error.message);
+    }
+  };
+
+  // Initialize WebRTC connection (Phone as controller)
+  const initWebRTC = async () => {
+    if (!qrScanResult) {
+      alert('Please scan a QR code first');
+      return;
+    }
+
+    try {
+      setWebrtcStatus('connecting');
+      webrtcRef.current = new WebRTCConnection(false); // Phone is not initiator
+      
+      // Setup WebRTC callbacks
+      webrtcRef.current.onConnectionStateChange = (state) => {
+        setWebrtcStatus(state);
+        if (state === 'connected') {
+          setStatus('connected');
+          startSendingControls();
+        }
+      };
+      
+      // Connect to signaling server
+      await webrtcRef.current.connectToSignalingServer(qrScanResult.websocket_url, qrScanResult.room);
+      
+      console.log('WebRTC controller initialized, waiting for PC connection...');
+    } catch (error) {
+      console.error('WebRTC initialization failed:', error);
+      setWebrtcStatus('failed');
+    }
+  };
+
+  // Send control data over WebRTC or WebSocket
+  const sendControlData = () => {
+    const controlData = {
+      type: 'control',
+      room,
+      axes: axesRef.current
+    };
+
+    if (connectionType === 'webrtc' && webrtcRef.current) {
+      const sent = webrtcRef.current.sendData(controlData);
+      if (!sent) {
+        console.warn('WebRTC data channel not ready, data not sent');
+      }
+    } else if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify(controlData));
+    }
+  };
+
+  // Start sending control data at 30Hz
+  const startSendingControls = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    
+    intervalRef.current = setInterval(() => {
+      sendControlData();
+    }, 33); // ~30 FPS
+  };
+
   const connect = async () => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) return;
     
@@ -233,22 +358,15 @@ const Controller = () => {
       socketRef.current.onopen = () => {
         console.log('WebSocket connected successfully to:', dynamicWsUrl);
         setStatus('connected');
+        setConnectionType('websocket');
         socketRef.current.send(JSON.stringify({ 
           type: 'hello', 
           role: 'controller', 
           room 
         }));
         
-        //  sending controls at ~30Hz
-        intervalRef.current = setInterval(() => {
-          if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-            socketRef.current.send(JSON.stringify({ 
-              type: 'control', 
-              room, 
-              axes: axesRef.current 
-            }));
-          }
-        }, 33);
+        // Start sending controls using unified function
+        startSendingControls();
       };
     } catch (error) {
       console.error('Failed to get dynamic WebSocket URL:', error);
@@ -311,7 +429,40 @@ const Controller = () => {
             onChange={(e) => setRoom(e.target.value)}
             size="4" 
           />
-          <button onClick={connect}>Connect</button>
+          <button onClick={connect}>Connect WS</button>
+        </div>
+
+        {/* WebRTC Controls */}
+        <div className="webrtc-section">
+          <div className="connection-type-toggle">
+            <button 
+              onClick={() => setConnectionType(connectionType === 'websocket' ? 'webrtc' : 'websocket')}
+              className={`connection-type-btn ${connectionType}`}
+            >
+              {connectionType === 'websocket' ? '📡→🔗' : '🔗→📡'}
+            </button>
+          </div>
+          
+          {connectionType === 'webrtc' && (
+            <div className="webrtc-controls">
+              <button 
+                onClick={() => setShowQrScanner(!showQrScanner)}
+                className="qr-scan-btn"
+              >
+                📱 {showQrScanner ? 'Hide' : 'Scan QR'}
+              </button>
+              
+              {qrScanResult && (
+                <button onClick={initWebRTC} className="webrtc-connect-btn">
+                  🚀 Connect P2P
+                </button>
+              )}
+              
+              <span className={`webrtc-status ${webrtcStatus}`}>
+                {webrtcStatus}
+              </span>
+            </div>
+          )}
         </div>
         
         <span id="status" className={getStatusClass()}>{status}</span>
@@ -333,9 +484,15 @@ const Controller = () => {
             <div className="joystick-label-right">Pitch / Roll</div>
           </div>
         </div>
-        
 
       </div>
+
+      {/* QR Code Scanner with camera functionality */}
+      <QRScanner
+        isOpen={showQrScanner}
+        onScan={handleQrCodeInput}
+        onClose={() => setShowQrScanner(false)}
+      />
     </div>
   );
 };

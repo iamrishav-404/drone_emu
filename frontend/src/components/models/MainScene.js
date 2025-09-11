@@ -55,7 +55,8 @@ class MainScene {
     this.propState = {
       currentRPM: 0,
       targetRPM: 0,
-      isArmed: false
+      isArmed: false,
+      powerOn: false
     };
     
     // Camera mode state
@@ -1613,13 +1614,21 @@ class MainScene {
   }
 
   // Update control inputs from WebSocket
-  updateControls(controls, timestamp) {
+  updateControls(controls, timestamp, powerState = true) {
     this.currentControls = controls;
     this.lastControlTime = timestamp;
     
-    // Auto-arm when throttle is applied
-    if (controls.throttle > 0.05 && !this.propState.isArmed) {
+    // Update power state
+    this.propState.powerOn = powerState;
+    
+    // Auto-arm when throttle is applied and power is on
+    if (controls.throttle > 0.05 && !this.propState.isArmed && powerState) {
       this.propState.isArmed = true;
+    }
+    
+    // Disarm when power is turned off
+    if (!powerState) {
+      this.propState.isArmed = false;
     }
   }
 
@@ -1627,16 +1636,23 @@ class MainScene {
   updatePropellerRPM(throttleInput, deltaTime) {
     let targetRPM = 0;
     
-    if (this.propState.isArmed) {
+    // Power off - completely stop propellers
+    if (!this.propState.powerOn) {
+      targetRPM = 0;
+    }
+    // Power on but not armed - slight idle movement like real drones
+    else if (this.propState.powerOn && !this.propState.isArmed) {
+      targetRPM = this.params.minRPM * 0.3; // 30% of min RPM for idle movement
+    }
+    // Power on and armed - normal operation
+    else if (this.propState.isArmed) {
       if (throttleInput > 0.01) {
         // Non-linear throttle curve like real drones
         const normalizedThrottle = Math.pow(throttleInput, 1.5);
         targetRPM = this.params.minRPM + (this.params.maxRPM - this.params.minRPM) * normalizedThrottle;
       } else {
-        targetRPM = this.params.minRPM; // Idle RPM when armed
+        targetRPM = this.params.minRPM; // Full idle RPM when armed
       }
-    } else {
-      targetRPM = 0; // Disarmed
     }
 
     this.propState.targetRPM = targetRPM;
@@ -1644,7 +1660,15 @@ class MainScene {
     // Smooth RPM transitions
     const rpmDiff = this.propState.targetRPM - this.propState.currentRPM;
     const isSpinningUp = rpmDiff > 0;
-    const transitionTime = isSpinningUp ? this.params.propSpinupTime : this.params.propSpindownTime;
+    
+    // Faster spindown when power is turned off for realistic behavior
+    let transitionTime;
+    if (!this.propState.powerOn) {
+      transitionTime = this.params.propSpindownTime * 1.5; // Slower decay when power off
+    } else {
+      transitionTime = isSpinningUp ? this.params.propSpinupTime : this.params.propSpindownTime;
+    }
+    
     const rpmChangeRate = Math.abs(rpmDiff) / transitionTime;
     
     if (Math.abs(rpmDiff) > 50) {
@@ -2013,6 +2037,18 @@ class MainScene {
       yaw: this.droneState.yaw * 180 / Math.PI,   // Convert to degrees
       pitch: this.droneState.pitch * 180 / Math.PI,
       roll: this.droneState.roll * 180 / Math.PI
+    };
+  }
+
+  // Get current drone velocity for real-time display
+  getDroneVelocity() {
+    const vel = this.droneState.vel;
+    return {
+      x: vel.x,
+      y: vel.y,
+      z: vel.z,
+      total: vel.length(), // Total speed magnitude
+      horizontal: Math.sqrt(vel.x * vel.x + vel.z * vel.z) // Horizontal speed (ignoring Y)
     };
   }
 

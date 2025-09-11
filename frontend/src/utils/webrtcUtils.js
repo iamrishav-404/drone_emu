@@ -22,6 +22,12 @@ export class WebRTCConnection {
 
   // Initialize WebRTC peer connection
   async initializePeerConnection() {
+    // Don't reinitialize if already exists and connected
+    if (this.peerConnection && this.peerConnection.connectionState !== 'failed' && this.peerConnection.connectionState !== 'closed') {
+      console.log('Peer connection already exists, skipping initialization');
+      return;
+    }
+    
     this.peerConnection = new RTCPeerConnection({
       iceServers: this.iceServers
     });
@@ -41,7 +47,7 @@ export class WebRTCConnection {
     // Handle connection state changes
     this.peerConnection.onconnectionstatechange = () => {
       const state = this.peerConnection.connectionState;
-      console.log('WebRTC connection state:', state);
+      console.log('WebRTC connection state:', state, 'signaling state:', this.peerConnection.signalingState);
       if (this.onConnectionStateChange) {
         this.onConnectionStateChange(state);
       }
@@ -208,24 +214,48 @@ export class WebRTCConnection {
 
   // Handle received offer and create answer (Phone controller)
   async handleOffer(offer) {
+    if (this.peerConnection && this.peerConnection.signalingState !== 'stable') {
+      console.error('Received offer in wrong state:', this.peerConnection.signalingState);
+      return;
+    }
+    
     await this.initializePeerConnection();
     
-    await this.peerConnection.setRemoteDescription(offer);
-    const answer = await this.peerConnection.createAnswer();
-    await this.peerConnection.setLocalDescription(answer);
-    
-    console.log('Created WebRTC answer');
-    this.websocket.send(JSON.stringify({
-      type: 'webrtc_answer',
-      answer: answer,
-      room: this.room
-    }));
+    try {
+      await this.peerConnection.setRemoteDescription(offer);
+      const answer = await this.peerConnection.createAnswer();
+      await this.peerConnection.setLocalDescription(answer);
+      
+      console.log('Created WebRTC answer');
+      this.websocket.send(JSON.stringify({
+        type: 'webrtc_answer',
+        answer: answer,
+        room: this.room
+      }));
+    } catch (error) {
+      console.error('Failed to handle offer:', error);
+    }
   }
 
   // Handle received answer (PC initiator)
   async handleAnswer(answer) {
-    await this.peerConnection.setRemoteDescription(answer);
-    console.log('Received WebRTC answer');
+    if (!this.peerConnection) {
+      console.error('No peer connection when receiving answer');
+      return;
+    }
+    
+    // Check if we're in the correct state to receive an answer
+    if (this.peerConnection.signalingState !== 'have-local-offer') {
+      console.error('Received answer in wrong state:', this.peerConnection.signalingState);
+      return;
+    }
+    
+    try {
+      await this.peerConnection.setRemoteDescription(answer);
+      console.log('Received WebRTC answer');
+    } catch (error) {
+      console.error('Failed to set remote description:', error);
+    }
   }
 
   // Handle ICE candidate

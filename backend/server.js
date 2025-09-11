@@ -22,7 +22,7 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, ngrok-skip-browser-warning');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   if (req.method === 'OPTIONS') {
@@ -171,7 +171,15 @@ app.get("/get-ip", (req, res) => {
 app.get("/generate-qr/:room", async (req, res) => {
   try {
     const room = req.params.room || 'A';
-    const serverUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Detect if request came through HTTPS (including ngrok)
+    const isHttps = req.protocol === 'https' || 
+                   req.get('x-forwarded-proto') === 'https' ||
+                   req.get('host').includes('.ngrok-free.app') ||
+                   req.get('host').includes('.ngrok.io');
+    
+    const protocol = isHttps ? 'https' : 'http';
+    const serverUrl = `${protocol}://${req.get('host')}`;
     
     // Allow override with environment variable for ngrok
     const backendUrl = process.env.BACKEND_URL || serverUrl;
@@ -183,6 +191,12 @@ app.get("/generate-qr/:room", async (req, res) => {
     } else {
       websocketUrl = backendUrl.replace('http://', 'ws://');
     }
+    
+    console.log('Request protocol:', req.protocol);
+    console.log('X-Forwarded-Proto:', req.get('x-forwarded-proto'));
+    console.log('Host:', req.get('host'));
+    console.log('Detected HTTPS:', isHttps);
+    console.log('Using server URL:', serverUrl);
     
     // WebRTC connection info for QR code
     const connectionInfo = {

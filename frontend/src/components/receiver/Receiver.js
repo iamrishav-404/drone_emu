@@ -1,8 +1,8 @@
-
-import React, { useEffect, useRef, useState } from 'react';
-import MainScene from '../models/MainScene';
-import { WebRTCConnection } from '../../utils/webrtcUtils';
-import './Receiver.css';
+import React, { useEffect, useRef, useState } from "react";
+import MainScene from "../models/MainScene";
+import { WebRTCConnection } from "../../utils/webrtcUtils";
+import "./Receiver.css";
+import { Icons } from "../../utils/Icons";
 
 const Receiver = () => {
   const containerRef = useRef(null);
@@ -10,37 +10,55 @@ const Receiver = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [sceneInfo, setSceneInfo] = useState(null);
   const [dronePosition, setDronePosition] = useState({ x: 0, y: 0, z: 0 });
-  const [droneAttitude, setDroneAttitude] = useState({ yaw: 0, pitch: 0, roll: 0 });
-  const [wsStatus, setWsStatus] = useState('disconnected');
-  const [latency, setLatency] = useState('--');
-  const [wsUrl, setWsUrl] = useState('');
-  const [room, setRoom] = useState(() => Math.random().toString(36).substr(2, 8));
-  const [droneLoaded, setDroneLoaded] = useState(false); 
-  const [cameraMode, setCameraMode] = useState('chase'); 
-  const [showDetails, setShowDetails] = useState(false); // Toggle for details panel 
-  
+  const [droneAttitude, setDroneAttitude] = useState({
+    yaw: 0,
+    pitch: 0,
+    roll: 0,
+  });
+  const [droneSpeed, setDroneSpeed] = useState(0); // Total speed in m/s
+  const [latency, setLatency] = useState("--");
+  const [room, setRoom] = useState(() =>
+    Math.random().toString(36).substr(2, 8)
+  );
+  const [droneLoaded, setDroneLoaded] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false); // True when both scene and drone are loaded
+  const [cameraMode, setCameraMode] = useState("chase");
+  const [showDetails, setShowDetails] = useState(false);
+  const [powerStatus, setPowerStatus] = useState(false);
+
+  // Connection popup states
+  const [showConnectionPopup, setShowConnectionPopup] = useState(true);
+  const [connectionStep, setConnectionStep] = useState("setup"); // 'setup', 'waiting', 'connecting'
+  const [isConnected, setIsConnected] = useState(false);
+
   // WebRTC states
-  const [connectionType, setConnectionType] = useState('websocket'); // 'websocket' or 'webrtc'
-  const [qrCodeImage, setQrCodeImage] = useState('');
-  const [showQrCode, setShowQrCode] = useState(false);
-  const [webrtcStatus, setWebrtcStatus] = useState('disconnected');
-  
-  // WebSocket refs
-  const socketRef = useRef(null);
+  const [qrCodeImage, setQrCodeImage] = useState("");
+  const [webrtcStatus, setWebrtcStatus] = useState("disconnected");
+  const [connectionUrl, setConnectionUrl] = useState("");
+
+  // Refs
   const webrtcRef = useRef(null);
-  const pingIntervalRef = useRef(null);
-  const pingStartTimeRef = useRef(0);
-  const latencyHistoryRef = useRef([]);
+  const qrCodeRef = useRef(null);
   const lastMsgTimeRef = useRef(0);
   const controlsRef = useRef({ throttle: 0, yaw: 0, pitch: 0, roll: 0 });
+  const lastReceivedPowerState = useRef(null); // Track power state changes
+  const pingStartTimeRef = useRef(0);
+  const latencyHistoryRef = useRef([]);
+  const pingIntervalRef = useRef(null);
 
-
+  // Debug logging for loading states
   useEffect(() => {
-    // Set WebSocket URL based on environment
-    const baseUrl = process.env.REACT_APP_WEBHOOK_URL || `http://${window.location.hostname}:3000`;
-    const wsUrl = baseUrl.replace('http://', 'ws://').replace('https://', 'wss://');
-    setWsUrl(wsUrl);
-  }, []);
+    console.log("Loading states:", { isLoaded, droneLoaded, sceneReady });
+  }, [isLoaded, droneLoaded, sceneReady]);
+
+  // Debug logging for connection states
+  useEffect(() => {
+    console.log("Connection states:", {
+      isConnected,
+      webrtcStatus,
+      connectionStep,
+    });
+  }, [isConnected, webrtcStatus, connectionStep]);
 
   useEffect(() => {
     let interval = null;
@@ -48,24 +66,50 @@ const Receiver = () => {
 
     if (containerRef.current && !sceneRef.current) {
       try {
+        console.log("Initializing 3D scene...");
         sceneRef.current = new MainScene(containerRef.current);
-        setIsLoaded(true);
-        
-        setTimeout(async () => {
-          if (!droneLoaded) { 
-            try {
-              console.log('Auto-loading drone model...');
-              await sceneRef.current.loadMainDrone();
-              setDroneLoaded(true);
-              console.log('Drone model auto-loaded successfully!');
+        setIsLoaded(true); // Scene is created but not ready yet
 
-           // console.log("mic check please ... , disabling the drone model currently")
-            } catch (error) {
-              console.warn('Auto-load failed, model can be loaded manually:', error.message);
+        // Load drone model with proper error handling and state management
+        const loadDroneAsync = async () => {
+          try {
+            console.log("Loading drone model...");
+            const droneModel = await sceneRef.current.loadMainDrone();
+            
+            // Only update state if we actually got a drone model
+            if (droneModel && sceneRef.current.droneModel) {
+              console.log("Drone model loaded successfully!");
+              setDroneLoaded(true);
+              setSceneReady(true); // Now everything is ready!
+            } else {
+              console.warn("Drone model loading returned null - may already be loaded");
+              // Check if drone is actually already loaded
+              if (sceneRef.current.droneModel) {
+                console.log("Drone was already loaded, updating state");
+                setDroneLoaded(true);
+                setSceneReady(true);
+              } else {
+                throw new Error("Failed to load drone model");
+              }
             }
+          } catch (error) {
+            console.error("Drone loading failed:", error.message);
+            // Don't show scene if drone failed to load - keep loading screen
+            setDroneLoaded(false);
+            setSceneReady(false);
+            // Retry after 2 seconds
+            setTimeout(() => {
+              if (sceneRef.current && !sceneRef.current.droneModel) {
+                console.log("Retrying drone load...");
+                loadDroneAsync();
+              }
+            }, 2000);
           }
-        }, 1000);
-        
+        };
+
+        // Start loading drone immediately
+        loadDroneAsync();
+
         // Update scene info every 2 seconds
         interval = setInterval(() => {
           if (sceneRef.current) {
@@ -78,13 +122,16 @@ const Receiver = () => {
           if (sceneRef.current && sceneRef.current.getDronePosition) {
             const newPos = sceneRef.current.getDronePosition();
             const newAtt = sceneRef.current.getDroneAttitude();
+            const newVel = sceneRef.current.getDroneVelocity();
             setDronePosition(newPos);
             setDroneAttitude(newAtt);
+            setDroneSpeed(newVel.total); // Update total speed
           }
         }, 100);
-
       } catch (error) {
-        console.error('Failed to initialize Three.js scene:', error);
+        console.error("Failed to initialize Three.js scene:", error);
+        setSceneReady(false);
+        setDroneLoaded(false);
       }
     }
 
@@ -92,155 +139,189 @@ const Receiver = () => {
     return () => {
       if (interval) clearInterval(interval);
       if (droneInterval) clearInterval(droneInterval);
-      
+
       if (sceneRef.current) {
         sceneRef.current.dispose();
         sceneRef.current = null;
       }
-      if (socketRef.current) {
-        socketRef.current.close();
+      if (webrtcRef.current) {
+        webrtcRef.current.close();
       }
-      if (pingIntervalRef.current) {
-        clearInterval(pingIntervalRef.current);
-      }
+      
+      // Cleanup latency monitoring
+      stopLatencyMonitoring();
     };
   }, []);
 
   // Generate QR Code for WebRTC connection
   const generateQRCode = async () => {
     try {
-      const baseUrl = process.env.REACT_APP_WEBHOOK_URL || `http://${window.location.hostname}:3000`;
-      const response = await fetch(`${baseUrl}/generate-qr/${room}`);
+      const baseUrl =
+        process.env.REACT_APP_WEBHOOK_URL ||
+        `http://${window.location.hostname}:3000`;
+      const response = await fetch(`${baseUrl}/generate-qr/${room}`, {
+        headers: {
+          "ngrok-skip-browser-warning": "true",
+        },
+      });
       const data = await response.json();
-      
+
       setQrCodeImage(data.qr_code);
-      setShowQrCode(true);
-      console.log('QR Code generated for room:', room);
+      setConnectionStep("waiting"); // Update connection step for popup
+      setConnectionUrl(`${baseUrl}/controller?room=${room}`); // Set connection URL
+      console.log("QR Code generated for room:", room);
     } catch (error) {
-      console.error('Failed to generate QR code:', error);
+      console.error("Failed to generate QR code:", error);
     }
   };
 
   // Initialize WebRTC connection (PC as initiator)
   const initWebRTC = async () => {
     try {
-      setWebrtcStatus('connecting');
+      setWebrtcStatus("connecting");
       webrtcRef.current = new WebRTCConnection(true); // PC is initiator
-      
+
       // Setup WebRTC callbacks
       webrtcRef.current.onConnectionStateChange = (state) => {
         setWebrtcStatus(state);
-        if (state === 'connected') {
-          setConnectionType('webrtc');
-          setLatency('~20ms'); // WebRTC typical latency
+        if (state === "connected") {
+          setLatency("--");
+          setShowConnectionPopup(false); 
+          setIsConnected(true);
+          startLatencyMonitoring(); // Start ping-pong latency measurement
+        } else if (state === "failed" || state === "disconnected") {
+          setLatency("--");
+          setIsConnected(false);
+          setShowConnectionPopup(true);
+          setConnectionStep("disconnected");
+          stopLatencyMonitoring(); // Stop latency monitoring
+          console.log("WebRTC connection lost:", state);
+        } else if (state === "connecting") {
+          setConnectionStep("connecting");
         }
       };
-      
+
       webrtcRef.current.onDataChannelMessage = (data) => {
         handleControlData(data);
       };
-      
-      // Connect to signaling server
+
+      // Connect to signaling server - use same logic as backend for consistency
+      const baseUrl =
+        process.env.REACT_APP_WEBHOOK_URL ||
+        `http://${window.location.hostname}:3000`;
+      let wsUrl;
+      if (baseUrl.startsWith("https://")) {
+        wsUrl = baseUrl.replace("https://", "wss://");
+      } else {
+        wsUrl = baseUrl.replace("http://", "ws://");
+      }
+      console.log("Receiver connecting to:", wsUrl, "for room:", room);
       await webrtcRef.current.connectToSignalingServer(wsUrl, room);
-      
+
       // Create WebRTC offer
       await webrtcRef.current.createOffer();
-      
-      console.log('WebRTC initialized, waiting for phone to connect...');
+
+      console.log("WebRTC initialized, waiting for phone to connect...");
     } catch (error) {
-      console.error('WebRTC initialization failed:', error);
-      setWebrtcStatus('failed');
+      console.error("WebRTC initialization failed:", error);
+      setWebrtcStatus("failed");
     }
   };
 
-  // Handle control data from WebRTC or WebSocket
+  // Latency monitoring functions
+  const startLatencyMonitoring = () => {
+    if (pingIntervalRef.current) {
+      clearInterval(pingIntervalRef.current);
+    }
+    
+    // Send ping every 2 seconds
+    pingIntervalRef.current = setInterval(() => {
+      if (webrtcRef.current?.dataChannel?.readyState === 'open') {
+        pingStartTimeRef.current = performance.now();
+        webrtcRef.current.sendData({
+          type: 'ping',
+          timestamp: pingStartTimeRef.current
+        });
+      }
+    }, 2000);
+  };
+
+  const stopLatencyMonitoring = () => {
+    if (pingIntervalRef.current) {
+      clearInterval(pingIntervalRef.current);
+      pingIntervalRef.current = null;
+    }
+    latencyHistoryRef.current = [];
+  };
+
+  const updateLatency = (roundTripTime) => {
+    // Keep last 5 latency measurements for averaging
+    latencyHistoryRef.current.push(roundTripTime);
+    if (latencyHistoryRef.current.length > 5) {
+      latencyHistoryRef.current.shift();
+    }
+    
+    // Calculate average latency
+    const avgLatency = latencyHistoryRef.current.reduce((sum, val) => sum + val, 0) / latencyHistoryRef.current.length;
+    setLatency(`${Math.round(avgLatency)}ms`);
+  };
+
+  // Handle control data from WebRTC
   const handleControlData = (data) => {
-    if (data.type === 'control') {
+    // Handle ping-pong for latency measurement
+    if (data.type === "pong") {
+      const currentTime = performance.now();
+      const roundTripTime = currentTime - data.timestamp;
+      updateLatency(roundTripTime);
+      return;
+    }
+
+    if (data.type === "control") {
       lastMsgTimeRef.current = Date.now();
       controlsRef.current = data.axes;
-      
-      if (sceneRef.current && droneLoaded) {
-        sceneRef.current.updateControls(data.axes);
+
+      // Update power status from phone and only log when it changes
+      if (typeof data.power !== "undefined") {
+        if (lastReceivedPowerState.current !== data.power) {
+          console.log(
+            "Received power state change:",
+            data.power ? "ON" : "OFF"
+          );
+          lastReceivedPowerState.current = data.power;
+        }
+        setPowerStatus(data.power);
       }
-      
-      // Update position and attitude for display
+
+      // Only update drone controls if power is ON
+      if (sceneRef.current && droneLoaded && data.power) {
+        sceneRef.current.updateControls(data.axes, performance.now(), true);
+        // Only log occasionally when power is on
+        if (Math.random() < 0.01) {
+          console.log("Drone controls active - Power ON");
+        }
+      } else if (sceneRef.current && droneLoaded && data.power === false) {
+        const zeroControls = { throttle: 0, yaw: 0, pitch: 0, roll: 0 };
+        sceneRef.current.updateControls(zeroControls, performance.now(), false);
+        // Only log when transitioning to OFF state
+        if (lastReceivedPowerState.current === true) {
+          console.log("Drone stopped - Power OFF");
+        }
+      }
+
+      // Always update position and attitude for display (regardless of power state)
       if (sceneRef.current?.drone?.position) {
         const pos = sceneRef.current.drone.position;
         setDronePosition({ x: pos.x, y: pos.y, z: pos.z });
       }
       if (sceneRef.current?.drone?.rotation) {
         const rot = sceneRef.current.drone.rotation;
-        setDroneAttitude({ 
-          yaw: (rot.y * 180 / Math.PI).toFixed(1), 
-          pitch: (rot.x * 180 / Math.PI).toFixed(1), 
-          roll: (rot.z * 180 / Math.PI).toFixed(1) 
+        setDroneAttitude({
+          yaw: ((rot.y * 180) / Math.PI).toFixed(1),
+          pitch: ((rot.x * 180) / Math.PI).toFixed(1),
+          roll: ((rot.z * 180) / Math.PI).toFixed(1),
         });
       }
     }
-  };
-
-  const connectWS = () => {
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) return;
-    
-    socketRef.current = new WebSocket(wsUrl);
-    
-    socketRef.current.onopen = () => {
-      setWsStatus('connected');
-      socketRef.current.send(JSON.stringify({ 
-        type: 'hello', 
-        role: 'receiver', 
-        room 
-      }));
-      
-      // Start ping measurements every 2 seconds
-      pingIntervalRef.current = setInterval(() => {
-        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-          pingStartTimeRef.current = performance.now();
-          socketRef.current.send(JSON.stringify({ 
-            type: 'ping', 
-            timestamp: pingStartTimeRef.current 
-          }));
-        }
-      }, 2000);
-    };
-    
-    socketRef.current.onmessage = (e) => {
-      const msg = JSON.parse(e.data);
-      
-      // Handle pong response for RTT measurement
-      if (msg.type === 'pong' && msg.timestamp === pingStartTimeRef.current) {
-        const rtt = performance.now() - pingStartTimeRef.current;
-        const latencyMs = rtt / 2; // Half of round-trip time
-        
-        latencyHistoryRef.current.push(latencyMs);
-        if (latencyHistoryRef.current.length > 10) latencyHistoryRef.current.shift();
-        const avgLatency = latencyHistoryRef.current.reduce((a,b) => a+b, 0) / latencyHistoryRef.current.length;
-        
-        setLatency(`${latencyMs.toFixed(1)}ms (avg: ${avgLatency.toFixed(1)}ms)`);
-      }
-      
-      // Handle control messages using the unified handler
-      if (msg.type === 'control' && msg.room === room) {
-        handleControlData(msg);
-      }
-    };
-    
-    socketRef.current.onclose = () => {
-      setWsStatus('disconnected');
-      setLatency('--ms');
-      if (pingIntervalRef.current) {
-        clearInterval(pingIntervalRef.current);
-        pingIntervalRef.current = null;
-      }
-    };
-    
-    socketRef.current.onerror = () => {
-      setWsStatus('error');
-      if (pingIntervalRef.current) {
-        clearInterval(pingIntervalRef.current);
-        pingIntervalRef.current = null;
-      }
-    };
   };
 
   const handleResetCamera = () => {
@@ -258,12 +339,12 @@ const Receiver = () => {
   };
 
   const toggleCameraMode = () => {
-    const newMode = cameraMode === 'chase' ? 'free' : 'chase';
+    const newMode = cameraMode === "chase" ? "free" : "chase";
     setCameraMode(newMode);
-    
+
     if (sceneRef.current) {
       sceneRef.current.setCameraMode(newMode);
-      if (newMode === 'free') {
+      if (newMode === "free") {
         sceneRef.current.resetCamera();
       }
     }
@@ -273,182 +354,230 @@ const Receiver = () => {
     setShowDetails(!showDetails);
   };
 
-  const getStatusClass = () => {
-    switch (wsStatus) {
-      case 'connected': return 'status-connected';
-      case 'error': return 'status-error';
-      default: return 'status-disconnected';
-    }
-  };
-
   return (
     <div className="receiver-container">
-      <div className="camera-toggle">
-        <button 
-          onClick={toggleCameraMode}
-          className={`camera-mode-btn ${cameraMode}`}
-          disabled={!isLoaded}
-          title={`Switch to ${cameraMode === 'chase' ? 'Free' : 'Chase'} Camera`}
-        >
-          📹 {cameraMode === 'chase' ? 'Chase Cam' : 'Free Cam'}
-        </button>
-      </div>
+      {/* Connection Popup */}
+      {showConnectionPopup && (
+        <div className="popup-overlay">
+          <div className="popup">
+            <div className="popup-header">
+              <h2>🚁 Drone Control Setup</h2>
+            </div>
+            <div className="popup-content">
+              {connectionStep === "setup" && (
+                <div className="setup-step">
+                  <p>Connect your phone controller to this receiver:</p>
+                  <button onClick={generateQRCode} className="generate-btn">
+                    Generate QR Code
+                  </button>
+                </div>
+              )}
 
-      <div 
-        ref={containerRef} 
-        className="receiver-canvas"
-      />
-      
-      {/* WebSocket Connection UI */}
-      <div className="receiver-controls">
-        <div className="connection-panel">
-          <label>WS:</label>
-          <input 
-            value={wsUrl}
-            onChange={(e) => setWsUrl(e.target.value)}
-            size="28"
-          />
-          <label>Room:</label>
-          <input 
-            value={room}
-            onChange={(e) => setRoom(e.target.value)}
-            size="4"
-          />
-          <button onClick={connectWS}>Connect</button>
-          <span className={getStatusClass()}>{wsStatus}</span>
-          <div className="latency-info">Latency: {latency}</div>
-          <div className="controls-info">
-            {controlsRef.current && (
-              <>
-                thr:{controlsRef.current.throttle?.toFixed(2) || '0.00'} 
-                yaw:{controlsRef.current.yaw?.toFixed(2) || '0.00'} 
-                pitch:{controlsRef.current.pitch?.toFixed(2) || '0.00'} 
-                roll:{controlsRef.current.roll?.toFixed(2) || '0.00'}
-                {(performance.now() - lastMsgTimeRef.current) > 500 ? ' (STALE)' : ''}
-              </>
+              {connectionStep === "waiting" && (
+                <div className="waiting-step">
+                  <div className="qr-container">
+                    {qrCodeImage && (
+                      <img src={qrCodeImage} alt="Connection QR Code" />
+                    )}
+                  </div>
+                  <p>Scan this QR code with your phone controller</p>
+                  <p className="instruction-text">
+                    After scanning, click "Start Connection" below to begin the
+                    session
+                  </p>
+                  <div className="connection-actions">
+                    <button
+                      onClick={initWebRTC}
+                      className="start-connection-btn"
+                    >
+                      Start Connection
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {connectionStep === "connecting" && (
+                <div className="connecting-step">
+                  <div className="spinner"></div>
+                  <p>Connecting to controller...</p>
+                </div>
+              )}
+
+              {connectionStep === "disconnected" && (
+                <div className="disconnected-step">
+                  <div className="disconnected-icon">🔴</div>
+                  <h3>Connection Lost</h3>
+                  <p>The connection to your phone controller was lost.</p>
+                  <div className="disconnection-reason">
+                    <p>
+                      <strong>Status:</strong> {webrtcStatus}
+                    </p>
+                  </div>
+                  <div className="reconnection-actions">
+                    <button
+                      onClick={() => setConnectionStep("setup")}
+                      className="reconnect-btn"
+                    >
+                      Setup New Connection
+                    </button>
+                    <button onClick={initWebRTC} className="retry-btn">
+                      Retry Connection
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3D Scene Canvas - Always present for initialization */}
+      <div ref={containerRef} className="receiver-canvas" />
+
+      {/* Loading Screen - Show while scene is loading */}
+      {!sceneReady && (
+        <div className="scene-loading-overlay">
+          <div className="scene-loading-content">
+            <div className="scene-loading-spinner"></div>
+            <h3>🚁 Loading Drone Simulator</h3>
+            <p>Preparing 3D scene and drone model...</p>
+            <div className="loading-progress">
+              <div className="progress-item">
+                <span className={isLoaded ? "completed" : "loading"}>
+                  {isLoaded ? "✓" : "⏳"} 3D Scene
+                </span>
+              </div>
+              <div className="progress-item">
+                <span className={droneLoaded ? "completed" : "loading"}>
+                  {droneLoaded ? "✓" : "⏳"} Drone Model
+                </span>
+              </div>
+            </div>
+            
+            {/* Show additional info if loading takes too long */}
+            {isLoaded && !droneLoaded && (
+              <div className="loading-details">
+                <p>⚠️ Drone model is taking longer than expected to load...</p>
+                <p>Please wait while we retry loading the 3D model.</p>
+              </div>
             )}
           </div>
         </div>
+      )}
 
-        {/* WebRTC Connection Panel */}
-        <div className="webrtc-panel">
-          <div className="connection-type-toggle">
-            <button 
-              onClick={() => setConnectionType(connectionType === 'websocket' ? 'webrtc' : 'websocket')}
-              className={`connection-type-btn ${connectionType}`}
-            >
-              🔄 {connectionType === 'websocket' ? 'Switch to WebRTC' : 'Switch to WebSocket'}
-            </button>
-          </div>
-          
-          {connectionType === 'webrtc' && (
-            <div className="webrtc-controls">
-              <button onClick={generateQRCode} disabled={!isLoaded}>
-                📱 Generate QR Code
-              </button>
-              <button onClick={initWebRTC} disabled={!isLoaded}>
-                🚀 Start WebRTC
-              </button>
-              <span className={`webrtc-status ${webrtcStatus}`}>
-                WebRTC: {webrtcStatus}
+      {/* Main Interface - only show when connected */}
+      {isConnected && (
+        <>
+          {/* Top Blurry Navbar */}
+          <div className="top-navbar">
+            {/* Connection Status Indicator */}
+            <div className="navbar-section connection-section">
+              <span className={`connection-indicator ${webrtcStatus}`}>
+                {webrtcStatus === "connected"
+                  ? "🟢"
+                  : webrtcStatus === "connecting"
+                  ? "🟡"
+                  : webrtcStatus === "waiting"
+                  ? "🟠"
+                  : "🔴"}
+                {webrtcStatus === "connected"
+                  ? "Connected"
+                  : webrtcStatus === "connecting"
+                  ? "Connecting..."
+                  : webrtcStatus === "waiting"
+                  ? "Ready"
+                  : "Disconnected"}
               </span>
             </div>
-          )}
 
-          {/* QR Code Display */}
-          {showQrCode && qrCodeImage && (
-            <div className="qr-code-display">
-              <h3>📱 Scan with Phone Controller:</h3>
-              <img src={qrCodeImage} alt="QR Code for WebRTC connection" />
-              <p>Room: {room} | WebRTC P2P Connection</p>
-              <button onClick={() => setShowQrCode(false)}>Hide QR Code</button>
-            </div>
-          )}
-        </div>
-
-        {/* More Details Toggle */}
-        <div className="details-toggle">
-          <button 
-            onClick={toggleDetails}
-            className="details-toggle-btn"
-            title={showDetails ? 'Hide Details' : 'Show More Details'}
-          >
-            <span className={`arrow ${showDetails ? 'up' : 'down'}`}>▼</span>
-            More Details
-          </button>
-        </div>
-
-        {/* Collapsible Details Section */}
-        {showDetails && (
-          <>
-            {/* Drone Position Display */}
-            <div className="drone-position-panel">
-              <strong>🚁 Drone Position (relative to ground center):</strong><br/>
-              <div className="position-grid">
-                <div className="position-item">
-                  <span className="position-label">X:</span>
-                  <span className="position-value">{dronePosition.x.toFixed(2)}m</span>
-                </div>
-                <div className="position-item">
-                  <span className="position-label">Y:</span>
-                  <span className="position-value">{dronePosition.y.toFixed(2)}m</span>
-                </div>
-                <div className="position-item">
-                  <span className="position-label">Z:</span>
-                  <span className="position-value">{dronePosition.z.toFixed(2)}m</span>
-                </div>
-              </div>
-              <div className="attitude-grid">
-                <div className="attitude-item">
-                  <span className="attitude-label">Yaw:</span>
-                  <span className="attitude-value">{droneAttitude.yaw.toFixed(1)}°</span>
-                </div>
-                <div className="attitude-item">
-                  <span className="attitude-label">Pitch:</span>
-                  <span className="attitude-value">{droneAttitude.pitch.toFixed(1)}°</span>
-                </div>
-                <div className="attitude-item">
-                  <span className="attitude-label">Roll:</span>
-                  <span className="attitude-value">{droneAttitude.roll.toFixed(1)}°</span>
+            {/* Power Switch Status */}
+            <div className="navbar-section power-section">
+              <div className={`navbar-power-button ${powerStatus ? "power-on" : "power-off"}`}>
+                <div className={`power-ring ${powerStatus ? "ring-active" : ""}`}></div>
+                <div className="power-icon">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    fill="currentColor"
+                    className="bi bi-power"
+                    viewBox="0 0 16 16"
+                  >
+                    <path d="M7.5 1v7h1V1z" />
+                    <path d="M3 8.812a5 5 0 0 1 2.578-4.375l-.485-.874A6 6 0 1 0 11 3.616l-.501.865A5 5 0 1 1 3 8.812" />
+                  </svg>
                 </div>
               </div>
             </div>
-             
-            {sceneInfo && (
-              <div className="scene-info">
-                Camera: ({sceneInfo.camera.position.x.toFixed(1)}, {sceneInfo.camera.position.y.toFixed(1)}, {sceneInfo.camera.position.z.toFixed(1)})<br/>
-              </div>
-            )}
-            
-            <div className="controls-buttons">
-              <button 
-                onClick={handleResetCamera}
-                className="control-button"
-                disabled={!isLoaded}
+
+            {/* Drone Position */}
+            <div className="navbar-section position-section">
+                {Icons.getLocationIcon(24, 24,"#ffffffff")}
+              <span className="position-info">
+               {/* X:{dronePosition.x.toFixed(1)} Y:{dronePosition.y.toFixed(1)} Z:{dronePosition.z.toFixed(1)} */}
+                &nbsp;{dronePosition.x.toFixed(1)}, {dronePosition.y.toFixed(1)}, {dronePosition.z.toFixed(1)}
+              </span>
+            </div>
+
+            {/* Drone Speed */}
+            <div className="navbar-section speed-section">
+              {Icons.getSpeedIcon(20, 20, "#ffffffff")}
+              <span className="speed-info">
+                &nbsp;{droneSpeed.toFixed(1)} m/s
+              </span>
+            </div>
+
+           
+
+            {/* Controller Controls Data */}
+            <div className="navbar-section controls-section">
+              {Icons.getControllerIcon(24, 24, "#ffffffff")}
+              <span className="controls-info">
+                {controlsRef.current && (
+                  <>
+                   &nbsp; T:{controlsRef.current.throttle?.toFixed(2) || "0.00"} 
+                    , Y:{controlsRef.current.yaw?.toFixed(2) || "0.00"} 
+                    , P:{controlsRef.current.pitch?.toFixed(2) || "0.00"} 
+                    , R:{controlsRef.current.roll?.toFixed(2) || "0.00"}
+                    {performance.now() - lastMsgTimeRef.current > 500 ? " (STALE)" : ""}
+                  </>
+                )}
+              </span>
+            </div>
+
+            {/* Camera Toggle Button */}
+            <div className="navbar-section camera-section">
+              <button
+                onClick={toggleCameraMode}
+                className={`camera-mode-btn ${cameraMode}`}
+                disabled={!sceneReady}
+                title={`Switch to ${cameraMode === "chase" ? "Free" : "Chase"} Camera`}
               >
-                 Reset Camera
-              </button>
-              
-              <button 
-                onClick={handleChangeBackground}
-                className="control-button"
-                disabled={!isLoaded}
-              >
-                Change Background
+                {Icons.getCameraIcon(24, 24, "#79c2ebff")}
+                {cameraMode === "chase" ? "Chase" : "Free"}
               </button>
             </div>
-          </>
-        )}
-      </div>
-
-      {/* Performance Info */}
-      <div className="performance-info">
-        {sceneInfo && (
-          <div className="fps-info">
-            FPS: ~60 | Calls: {sceneInfo.performance.render.calls}
           </div>
-        )}
-      </div>
+
+          {/* Latency Display - Bottom Left */}
+          <div className="latency-display">
+            <span className="latency-info">
+              {Icons.getSignalIcon(16, 16, "#79c2ebff")}
+              {latency}
+            </span>
+          </div>
+
+          {/* Additional Controls (Hidden for now) */}
+          <div style={{ display: 'none' }}>
+            <button onClick={handleResetCamera} className="control-button">
+              🔄 Reset Camera
+            </button>
+            {/* <button onClick={handleChangeBackground} className="control-button">
+              🎨 Change Background
+            </button> */}
+          </div>
+        </>
+      )}
     </div>
   );
 };

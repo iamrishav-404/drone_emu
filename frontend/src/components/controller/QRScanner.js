@@ -280,109 +280,100 @@ const QRScanner = ({ isOpen, onScan, onClose }) => {
   return (
     <div className="qr-scanner-modal">
       <div className="qr-scanner-content">
+        <div className="qr-scanner-content::before"></div>
+        
         <div className="qr-scanner-header">
-          <h3>📱 Scan QR Code</h3>
-          <button className="close-btn" onClick={onClose}>✕</button>
+          <h3>🎮 Connect to Receiver</h3>
+          <p>Point your camera at the QR code on the PC screen</p>
         </div>
 
-        {error && (
-          <div className="error-message">
-            ⚠️ {error}
-            {error.includes('permission') && (
-              <div className="permission-help">
-                <p>📱 <strong>On Mobile:</strong> Tap browser settings → Site settings → Camera → Allow</p>
-                <p>🖥️ <strong>On Desktop:</strong> Click the camera icon in address bar → Allow</p>
+        <div className="qr-scanner-body">
+          <div className="qr-camera-container">
+            <video
+              ref={videoRef}
+              className="qr-video"
+              playsInline
+              muted
+              autoPlay
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+            />
+            
+            <div className="qr-scanner-overlay">
+              <div className="qr-scanner-corners"></div>
+            </div>
+            
+            <div className="scanning-animation"></div>
+            
+            {!isScanning && !error && (
+              <div className="camera-loading" style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                color: 'var(--text-secondary)',
+                textAlign: 'center',
+                zIndex: 4
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  border: '3px solid var(--border-color)',
+                  borderTop: '3px solid var(--primary-color)',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  margin: '0 auto 12px'
+                }}></div>
+                <p style={{ margin: 0, fontSize: '14px' }}>Starting camera...</p>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <div style={{
+              marginTop: '20px',
+              padding: '16px',
+              background: 'rgba(249, 115, 22, 0.1)',
+              border: '1px solid #f97316',
+              borderRadius: '12px',
+              color: '#f97316',
+              fontSize: '14px',
+              textAlign: 'center'
+            }}>
+              <div style={{ marginBottom: '8px' }}>⚠️ {error}</div>
+              {error.includes('permission') && (
                 <button 
-                  className="retry-permission-btn"
                   onClick={() => {
                     setError('');
                     initializeCamera();
                   }}
+                  style={{
+                    background: '#f97316',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    marginTop: '8px'
+                  }}
                 >
                   🔄 Try Again
                 </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="scanner-section">
-          <video
-            ref={videoRef}
-            className="qr-video"
-            playsInline
-            muted
-            autoPlay
-          />
-          
-          {!isScanning && !error && (
-            <div className="camera-loading">
-              <p>📷 Requesting camera access...</p>
-              <div className="loading-spinner"></div>
-            </div>
-          )}
-          
-          {isScanning && (
-            <div className="scanning-overlay">
-              <div className="scan-frame"></div>
-              <p>Point camera at QR code</p>
+              )}
             </div>
           )}
         </div>
 
-        {devices.length > 1 && (
-          <div className="camera-selector">
-            <label>Camera: </label>
-            <select 
-              value={selectedDevice} 
-              onChange={(e) => switchCamera(e.target.value)}
-            >
-              {devices.map(device => (
-                <option key={device.deviceId} value={device.deviceId}>
-                  {device.label || `Camera ${device.deviceId.slice(0, 8)}`}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div className="manual-input-section">
-          <h4>Or paste QR code data:</h4>
-          <textarea
-            value={manualInput}
-            onChange={(e) => setManualInput(e.target.value)}
-            placeholder="Paste QR code data here..."
-            rows={3}
-          />
-          <button 
-            onClick={handleManualSubmit}
-            disabled={!manualInput.trim()}
-            className="manual-submit-btn"
-          >
-            Submit
-          </button>
-          
-          {/* Debug info for troubleshooting */}
-          <details className="debug-info">
-            <summary>🔧 Debug Info</summary>
-            <div className="debug-content">
-              <p><strong>Browser:</strong> {navigator.userAgent.split(' ').pop()}</p>
-              <p><strong>Protocol:</strong> {window.location.protocol}</p>
-              <p><strong>Media Support:</strong> {hasMediaDevicesSupport() ? '✅' : '❌'}</p>
-              <p><strong>Cameras Found:</strong> {devices.length}</p>
-              <p><strong>Is Mobile:</strong> {/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ? '📱' : '🖥️'}</p>
-            </div>
-          </details>
-        </div>
-
-        <div className="scanner-buttons">
-          <button onClick={() => initializeCamera()}>
-            🔄 Restart Camera
-          </button>
-          <button onClick={onClose}>
-            Close
-          </button>
-        </div>
+        <button 
+          className="qr-close-button"
+          onClick={onClose}
+        >
+          ✕
+        </button>
       </div>
     </div>
   );

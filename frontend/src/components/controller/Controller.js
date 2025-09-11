@@ -343,9 +343,9 @@ const Controller = () => {
         setWebrtcStatus(state);
         if (state === "connected") {
           setIsConnected(true);
-          setHasEverConnected(true); // Mark that user was connected at least once
+          setHasEverConnected(true); 
           hasEverConnectedRef.current = true;
-          setShowConnectionPopup(false); // Hide popup immediately when connected
+          setShowConnectionPopup(false);
           startSendingControls();
         } else if (state === "failed" || state === "disconnected") {
           setIsConnected(false);

@@ -1,195 +1,633 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html, body {
+  overflow-y: auto !important;
+}
+
 .App {
   width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Home page styles */
-.home-container {
+/* ===== LANDING PAGE DESIGN ===== */
+.landing-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0b0f14 0%, #1a1a2e 50%, #16213e 100%);
-  color: #e6edf3;
+  background: radial-gradient(ellipse at top, #667eea 0%, #764ba2 50%, #1a1a3e 100%);
+  position: relative;
+  overflow-x: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 40px 20px;
 }
 
-.home-content {
+/* Floating Background Elements */
+.floating-elements {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cloud {
+  position: absolute;
+  font-size: 2rem;
+  opacity: 0.6;
+  animation: float 6s ease-in-out infinite;
+}
+
+.cloud-1 { top: 10%; left: 10%; animation-delay: 0s; }
+.cloud-2 { top: 20%; right: 15%; animation-delay: 2s; }
+.cloud-3 { bottom: 25%; left: 20%; animation-delay: 4s; }
+
+.sparkle {
+  position: absolute;
+  font-size: 1.5rem;
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+.sparkle-1 { top: 15%; right: 25%; animation-delay: 1s; }
+.sparkle-2 { bottom: 30%; right: 10%; animation-delay: 2.5s; }
+.sparkle-3 { top: 60%; left: 5%; animation-delay: 0.5s; }
+
+/* Hero Section */
+.hero-section {
+  position: relative;
+  z-index: 2;
   text-align: center;
-  max-width: 800px;
+  max-width: 1200px;
   width: 100%;
 }
 
-.home-content h1 {
-  font-size: 3rem;
+/* Central Drone Animation */
+.drone-hero {
+  position: relative;
+  margin: 0 auto 3rem;
+  width: 120px;
+  height: 120px;
+  animation: hover 4s ease-in-out infinite;
+}
+
+.drone-body {
+  font-size: 4rem;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.3));
+}
+
+.propeller {
+  position: absolute;
+  width: 25px;
+  height: 4px;
+  background: linear-gradient(90deg, #4ade80, #22c55e);
+  border-radius: 2px;
+  animation: spin 0.1s linear infinite;
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+}
+
+.prop-1 { top: 15px; left: 15px; transform-origin: center; }
+.prop-2 { top: 15px; right: 15px; transform-origin: center; }
+.prop-3 { bottom: 15px; left: 15px; transform-origin: center; }
+.prop-4 { bottom: 15px; right: 15px; transform-origin: center; }
+
+.drone-shadow {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+  filter: blur(8px);
+  animation: shadowPulse 4s ease-in-out infinite;
+}
+
+/* Game Title */
+.game-title {
+  font-family: 'Just Me Again Down Here', cursive;
+  font-size: 6.5rem;
+  font-weight: 400;
   margin-bottom: 1rem;
-  background: linear-gradient(45deg, #4ade80, #60a5fa, #a78bfa);
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.title-word {
+  display: inline-block;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b, #d97706);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 30px rgba(74, 222, 128, 0.3);
+  text-shadow: 0 4px 8px rgba(251, 191, 36, 0.3);
+  animation: titleBounce 3s ease-in-out infinite;
 }
 
-.home-content p {
-  font-size: 1.2rem;
-  margin-bottom: 2rem;
-  opacity: 0.9;
+.title-word:nth-child(2) { animation-delay: 0.3s; }
+.title-word:nth-child(3) { animation-delay: 0.6s; }
+
+.game-subtitle {
+  font-size: 1.3rem;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 3rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.navigation-buttons {
+/* Connection Flow Visualization */
+.connection-flow {
   display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 2rem;
+  margin-bottom: 4rem;
+  flex-wrap: wrap;
+}
+
+.device {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 3rem;
+  color: white;
+  position: relative;
+  animation: devicePulse 3s ease-in-out infinite;
+}
+
+.device span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.phone-device { animation-delay: 0s; }
+.pc-device { animation-delay: 1.5s; }
+
+.signal {
+  position: absolute;
+  top: -10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: signalBlink 2s ease-in-out infinite;
+}
+
+.signal-phone {
+  right: -5px;
+  background: #10b981;
+  box-shadow: 0 0 15px #10b981;
+}
+
+.signal-pc {
+  left: -5px;
+  background: #3b82f6;
+  box-shadow: 0 0 15px #3b82f6;
+}
+
+.wifi-connection {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wifi-waves {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+}
+
+.wave {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(74, 222, 128, 0.6);
+  border-radius: 50%;
+  animation: waveExpand 2s ease-out infinite;
+}
+
+.wave-1 { animation-delay: 0s; }
+.wave-2 { animation-delay: 0.7s; }
+.wave-3 { animation-delay: 1.4s; }
+
+.wifi-icon {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 4px 8px rgba(74, 222, 128, 0.3));
+}
+
+/* Role Selection Buttons */
+.role-selection {
+  display: flex;
+  gap: 3rem;
   justify-content: center;
   margin-bottom: 3rem;
   flex-wrap: wrap;
 }
 
-.nav-button {
+.role-button {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem 1.5rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 30px;
   text-decoration: none;
-  color: #e6edf3;
-  transition: all 0.3s ease;
+  color: white;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   min-width: 250px;
-  backdrop-filter: blur(10px);
+  overflow: hidden;
+  transform-style: preserve-3d;
+}
+
+.role-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border-radius: 28px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.role-button:hover::before {
+  opacity: 1;
+}
+
+.role-button:hover {
+  transform: translateY(-15px) rotateX(5deg);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+}
+
+.button-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.button-content h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.button-content p {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  font-weight: 300;
+}
+
+.button-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 30px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.controller-glow {
+  background: radial-gradient(circle at center, rgba(167, 139, 250, 0.2), transparent 70%);
+}
+
+.receiver-glow {
+  background: radial-gradient(circle at center, rgba(59, 130, 246, 0.2), transparent 70%);
+}
+
+.controller-role:hover .controller-glow,
+.receiver-role:hover .receiver-glow {
+  opacity: 1;
+}
+
+/* Network Notice */
+.network-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid rgba(16, 185, 129, 0.3);
+  border-radius: 50px;
+  padding: 1rem 2rem;
+  max-width: 500px;
+  margin: 0 auto;
+  animation: noticePulse 4s ease-in-out infinite;
+}
+
+.notice-icon {
+  font-size: 2rem;
+  animation: iconSpin 10s linear infinite;
+}
+
+.notice-text {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: left;
+}
+
+.notice-text strong {
+  color: #10b981;
+  font-weight: 600;
+}
+
+/* How to Play Section */
+.how-to-play {
+  margin-top: 4rem;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.section-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 2rem;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 4px 8px rgba(251, 191, 36, 0.3);
+}
+
+.play-steps {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.play-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
 }
 
-.nav-button::before {
+.play-step::before {
   content: '';
   position: absolute;
   top: 0;
-  left: -100%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.play-step:hover::before {
+  opacity: 1;
+}
+
+.play-step:hover {
+  transform: translateY(-5px);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+}
+
+.step-number {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-content strong {
+  display: block;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.step-content p {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  font-weight: 300;
+}
+
+/* Decorative Flight Paths */
+.decorative-paths {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  transition: left 0.5s;
+  pointer-events: none;
+  z-index: 1;
 }
 
-.nav-button:hover::before {
-  left: 100%;
+.flight-path {
+  position: absolute;
+  width: 300px;
+  height: 200px;
 }
 
-.nav-button:hover {
-  transform: translateY(-5px);
-  border-color: rgba(74, 222, 128, 0.5);
-  box-shadow: 0 10px 30px rgba(74, 222, 128, 0.2);
+.flight-path:first-child {
+  top: 10%;
+  right: 5%;
+  animation: pathFlow 8s ease-in-out infinite;
 }
 
-.receiver-button:hover {
-  border-color: rgba(96, 165, 250, 0.5);
-  box-shadow: 0 10px 30px rgba(96, 165, 250, 0.2);
+.path-2 {
+  bottom: 15%;
+  left: 5%;
+  animation: pathFlow 8s ease-in-out infinite reverse;
 }
 
-.controller-button:hover {
-  border-color: rgba(167, 139, 250, 0.5);
-  box-shadow: 0 10px 30px rgba(167, 139, 250, 0.2);
+/* ===== ANIMATIONS ===== */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
 }
 
-.nav-button span:first-child {
-  font-size: 3rem;
-  margin-bottom: 1rem;
+@keyframes twinkle {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
 }
 
-.button-description {
-  font-size: 0.9rem !important;
-  opacity: 0.7;
-  text-align: center;
-  line-height: 1.4;
+@keyframes hover {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
 }
 
-.info-section {
-  background: rgba(0, 0, 0, 0.3);
-  padding: 2rem;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  text-align: left;
-  max-width: 600px;
-  margin: 0 auto;
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-.info-section h3 {
-  color: #4ade80;
-  margin-bottom: 1rem;
-  text-align: center;
+@keyframes shadowPulse {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.2; }
+  50% { transform: translateX(-50%) scale(1.1); opacity: 0.3; }
 }
 
-.info-section ul {
-  list-style: none;
-  padding: 0;
+@keyframes titleBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
-.info-section li {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+@keyframes devicePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
-.info-section li:last-child {
-  border-bottom: none;
+@keyframes signalBlink {
+  0%, 50%, 100% { opacity: 1; }
+  25%, 75% { opacity: 0.3; }
 }
 
-.info-section strong {
-  color: #60a5fa;
+@keyframes waveExpand {
+  0% { width: 20px; height: 20px; opacity: 1; }
+  100% { width: 80px; height: 80px; opacity: 0; }
 }
 
-/* Responsive design */
+@keyframes noticePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+@keyframes iconSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pathFlow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
-  .home-content h1 {
+  .game-title {
+    font-size: 3.5rem;
+    gap: 0.5rem;
+  }
+  
+  .game-subtitle {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .connection-flow {
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  
+  .device {
     font-size: 2rem;
   }
   
-  .navigation-buttons {
+  .role-selection {
     flex-direction: column;
     align-items: center;
+    gap: 2rem;
   }
   
-  .nav-button {
-    min-width: 200px;
+  .role-button {
+    min-width: 280px;
+    padding: 2rem;
   }
   
-  .info-section {
+  .network-notice {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.5rem;
+  }
+  
+  .notice-text {
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-page {
+    padding: 15px;
+  }
+  
+  .game-title {
+    font-size: 3rem;
+    flex-direction: column;
+    gap: 0;
+  }
+  
+  .drone-hero {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 2rem;
+  }
+  
+  .drone-body {
+    font-size: 3rem;
+  }
+  
+  .role-button {
+    min-width: 250px;
     padding: 1.5rem;
   }
 }
 
-/* Custom scrollbar for UI panels */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
-}
-
-/* Button hover effects */
+/* Legacy support for other components */
 button:hover {
   background: #333 !important;
   transform: translateY(-1px);
@@ -208,4 +646,44 @@ button:disabled {
 button:disabled:hover {
   transform: none;
   background: #1a1a1a !important;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* ===== DRONE PROPELLER ANIMATIONS ===== */
+.propeller-top-left {
+  animation: propellerSpin 0.1s linear infinite;
+}
+
+.propeller-top-right {
+  animation: propellerSpin 0.08s linear infinite reverse;
+}
+
+.propeller-bottom-left {
+  animation: propellerSpin 0.08s linear infinite reverse;
+}
+
+.propeller-bottom-right {
+  animation: propellerSpin 0.1s linear infinite;
+}
+
+@keyframes propellerSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

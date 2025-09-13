@@ -48,8 +48,14 @@ const Receiver = () => {
 
   // Debug logging for loading states
   useEffect(() => {
-    console.log("Loading states:", { isLoaded, droneLoaded, sceneReady });
-  }, [isLoaded, droneLoaded, sceneReady]);
+    console.log("Loading states changed:", { 
+      isLoaded, 
+      droneLoaded, 
+      sceneReady,
+      isConnected,
+      powerStatus
+    });
+  }, [isLoaded, droneLoaded, sceneReady, isConnected, powerStatus]);
 
   // Debug logging for connection states
   useEffect(() => {
@@ -78,7 +84,7 @@ const Receiver = () => {
             
             // Only update state if we actually got a drone model
             if (droneModel && sceneRef.current.droneModel) {
-              console.log("Drone model loaded successfully!");
+              console.log("🚁 Drone model loaded successfully! Ready for live controls.");
               setDroneLoaded(true);
               setSceneReady(true); // Now everything is ready!
             } else {
@@ -188,6 +194,13 @@ const Receiver = () => {
           setLatency("--");
           setShowConnectionPopup(false); 
           setIsConnected(true);
+          
+          // Reset drone state when connection is established
+          if (sceneRef.current && sceneRef.current.resetDroneState) {
+            console.log('Resetting drone state on connection...');
+            sceneRef.current.resetDroneState();
+          }
+          
           startLatencyMonitoring(); // Start ping-pong latency measurement
         } else if (state === "failed" || state === "disconnected") {
           setLatency("--");
@@ -277,36 +290,57 @@ const Receiver = () => {
     }
 
     if (data.type === "control") {
-      lastMsgTimeRef.current = Date.now();
       controlsRef.current = data.axes;
+      
+      // Log the actual control data being received
+      // console.log("Received control data:", {
+      //   throttle: data.axes.throttle?.toFixed(3),
+      //   yaw: data.axes.yaw?.toFixed(3),
+      //   pitch: data.axes.pitch?.toFixed(3),
+      //   roll: data.axes.roll?.toFixed(3),
+      //   power: data.power
+      // });
 
       // Update power status from phone and only log when it changes
       if (typeof data.power !== "undefined") {
+        const wasOff = lastReceivedPowerState.current === false;
+        const isNowOn = data.power === true;
+        
         if (lastReceivedPowerState.current !== data.power) {
           console.log(
             "Received power state change:",
             data.power ? "ON" : "OFF"
           );
           lastReceivedPowerState.current = data.power;
+          
+          // If power is being turned ON after being OFF, ensure control time is fresh
+          if (wasOff && isNowOn && sceneRef.current) {
+            console.log("Power turned ON after being OFF - refreshing control time");
+            // This prevents the failsafe from immediately kicking in
+            lastMsgTimeRef.current = Date.now();
+          }
         }
         setPowerStatus(data.power);
       }
 
-      // Only update drone controls if power is ON
-      if (sceneRef.current && droneLoaded && data.power) {
+      // Update message time AFTER handling power state
+      lastMsgTimeRef.current = Date.now();
+
+      // Update drone controls - Apply CURRENT controls if drone model exists
+      if (sceneRef.current?.droneModel && data.power) {
         sceneRef.current.updateControls(data.axes, performance.now(), true);
-        // Only log occasionally when power is on
-        if (Math.random() < 0.01) {
-          console.log("Drone controls active - Power ON");
-        }
-      } else if (sceneRef.current && droneLoaded && data.power === false) {
+      } else if (sceneRef.current?.droneModel && data.power === false) {
         const zeroControls = { throttle: 0, yaw: 0, pitch: 0, roll: 0 };
+        console.log("APPLYING ZERO CONTROLS - Power OFF");
         sceneRef.current.updateControls(zeroControls, performance.now(), false);
-        // Only log when transitioning to OFF state
-        if (lastReceivedPowerState.current === true) {
-          console.log("Drone stopped - Power OFF");
-        }
       }
+      // } else {
+      //   console.log("DRONE NOT READY YET - Controls will apply when drone loads:", {
+      //     hasDroneModel: !!sceneRef.current?.droneModel,
+      //     power: data.power,
+      //     throttle: data.axes.throttle?.toFixed(3)
+      //   });
+      // }
 
       // Always update position and attitude for display (regardless of power state)
       if (sceneRef.current?.drone?.position) {
@@ -338,17 +372,18 @@ const Receiver = () => {
     }
   };
 
-  const toggleCameraMode = () => {
-    const newMode = cameraMode === "chase" ? "free" : "chase";
-    setCameraMode(newMode);
+  // Camera mode toggle - currently disabled
+  // const toggleCameraMode = () => {
+  //   const newMode = cameraMode === "chase" ? "free" : "chase";
+  //   setCameraMode(newMode);
 
-    if (sceneRef.current) {
-      sceneRef.current.setCameraMode(newMode);
-      if (newMode === "free") {
-        sceneRef.current.resetCamera();
-      }
-    }
-  };
+  //   if (sceneRef.current) {
+  //     sceneRef.current.setCameraMode(newMode);
+  //     if (newMode === "free") {
+  //       sceneRef.current.resetCamera();
+  //     }
+  //   }
+  // };
 
   const toggleDetails = () => {
     setShowDetails(!showDetails);
@@ -545,8 +580,8 @@ const Receiver = () => {
               </span>
             </div>
 
-            {/* Camera Toggle Button */}
-            <div className="navbar-section camera-section">
+            {/* Camera Toggle Button - Commented out */}
+            {/* <div className="navbar-section camera-section">
               <button
                 onClick={toggleCameraMode}
                 className={`camera-mode-btn ${cameraMode}`}
@@ -556,7 +591,7 @@ const Receiver = () => {
                 {Icons.getCameraIcon(24, 24, "#79c2ebff")}
                 {cameraMode === "chase" ? "Chase" : "Free"}
               </button>
-            </div>
+            </div> */}
           </div>
 
           {/* Latency Display - Bottom Left */}

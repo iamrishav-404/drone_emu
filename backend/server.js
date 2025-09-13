@@ -206,11 +206,6 @@ app.get("/generate-qr/:room", async (req, res) => {
       ice_servers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        {
-          urls: 'turn:134.209.148.67:3478',
-          username: 'testuser',
-          credential: 'testpass'
-        }
       ]
     };
     

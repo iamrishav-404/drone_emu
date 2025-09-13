@@ -44,7 +44,7 @@ function Home() {
         {/* Connection Visualization */}
         <div className="connection-flow">
           <div className="device phone-device">
-            📱
+            <img src="/smartphone.png" alt="Phone Controller" style={{width: '48px', height: '48px'}} />
             <span>Controller</span>
             <div className="signal signal-phone"></div>
           </div>
@@ -61,7 +61,7 @@ function Home() {
           </div>
           
           <div className="device pc-device">
-            🖥️
+            <img src="/desktop.png" alt="PC Receiver" style={{width: '48px', height: '48px'}} />
             <span>Receiver</span>
             <div className="signal signal-pc"></div>
           </div>
@@ -70,7 +70,9 @@ function Home() {
         {/* Choice Buttons */}
         <div className="role-selection">
           <Link to="/controller" className="role-button controller-role">
-            <div className="button-icon">🎮</div>
+            <div className="button-icon">
+              <img src="/game-controller.png" alt="Game Controller" style={{width: '64px', height: '64px'}} />
+            </div>
             <div className="button-content">
               <h3>I'm the Controller</h3>
               <p>Use my phone as joystick</p>

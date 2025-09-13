@@ -1,6 +1,18 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+// import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';  
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshBVH } from 'three-mesh-bvh';
+
+
+// Extended THREE.BufferGeometry with BVH capabilities
+THREE.BufferGeometry.prototype.computeBoundsTree = function(options) {
+  this.boundsTree = new MeshBVH(this, options);
+  return this.boundsTree;
+};
+
+THREE.BufferGeometry.prototype.disposeBoundsTree = function() {
+  this.boundsTree = null;
+};
 
 
 class MainScene {
@@ -17,7 +29,7 @@ class MainScene {
     this.objects = [];
     this.mixers = []; // For animations
     this.props = {}
-    this.isLoadingDrone = false; // Add loading flag
+    this.isLoadingDrone = false; 
     
     // Drone physics state
     this.droneState = {
@@ -39,10 +51,10 @@ class MainScene {
       
       // Realistic propeller parameters
       minRPM: 800,        // Idle RPM when armed
-      maxRPM: 8000,       // Maximum RPM
+      maxRPM: 8000,       
       hoverThrottle: 0.35, // Throttle needed to hover
-      propSpinupTime: 0.2, // Time to spin up props
-      propSpindownTime: 0.8 // Time to spin down props
+      propSpinupTime: 0.2, 
+      propSpindownTime: 0.8 
     };
 
     // Control inputs
@@ -50,6 +62,15 @@ class MainScene {
     this.lastControlTime = 0;
     this.droneModel = null;
     this.directionalLight = null;
+    
+    // Performance optimization flags
+    this.debugHelpersCreated = false;
+    this.collisionCheckInterval = 0; 
+    
+    // BVH collision system
+    this.bvhColliders = []; 
+    this.bvhVisualizers = []; 
+    this.collisionTimeout = false; 
     
     // Realistic propeller state
     this.propState = {
@@ -75,6 +96,146 @@ class MainScene {
     
     // Environment collision objects
     this.environmentColliders = [];
+
+
+    this.groundCollisionsMesh = [
+        "Ground_Main",
+        "Plane_049",
+        "Road_1_Mat_0_008"
+      ];
+
+
+    this.cityCollisionsMesh = [
+      "Lowpoly_Tree_04_Material_0_024",
+          "House2",
+      "Truck_3_Mat_0_002",
+      "Truck_2_Mat_0_003",
+      "Truck_2_Mat_0_004",
+      "Traffic_Light_2_Mat_0_001_006",
+      "Traffic_Light_2_Mat_0_001_007",
+      "Traffic_Light_2_Mat_0_001_008",
+      "Traffic_Light_2_Mat_0_001_009",
+      "Taxi_Mat_0_003",
+      "Taxi_Mat_0_004",
+      "PublicBuilding_School_TextureBuildingsPack2_0_001_001",
+      "PublicBuilding_Police_TextureBuildingsPack2_0_001",
+      "PublicBuilding_Hospital_TextureBuildingsPack2_0_001_001",
+      "PublicBuilding_GasStation_TextureBuildingsPack2_0_001_001",
+      "PublicBuilding_CityHall_TextureBuildingsPack2_0_001",
+      "Police_Mat_0_011",
+      "Police_Mat_0_012",
+      "Police_Mat_0_013",
+      "Police_Mat_0_014",
+      "Police_Mat_0_015",
+      "Police_Mat_0_016",
+      "Police_Mat_0_017",
+      "Police_Mat_0_018",
+      "Police_Mat_0_019",
+      "Police_Mat_0_020",
+      "Pickup_3_Mat_0_002",
+      "Pickup_2_Mat_0_002",
+      "Pickup_1_Mat_0_003",
+      "Pickup_1_Mat_0_004",
+      "Object_2_001",
+      "Material_001-material_172",
+      "Material_001-material_173",
+      "Material_001-material_174",
+      "Material_001-material_175",
+      "Material_001-material_176",
+      "Material_001-material_177",
+      "Material_001-material_178",
+      "Material_001-material_179",
+      "Material_001-material_180",
+      "Material_001-material_181",
+      "Material_001-material_182",
+      "Material_001-material_183",
+      "Material_001-material_184",
+      "Material_001-material_185",
+      "Material_001-material_186",
+      "Material_001-material_187",
+      "Material_001-material_188",
+      "Material_001-material_189",
+      "Material_001-material_190",
+      "Material_001-material_191",
+      "Material_001-material_192",
+      "Material_001-material_193",
+      "Material_001-material_194",
+      "Material_001-material_195",
+      "Material_001-material_196",
+      "Material_001-material_197",
+      "Material_001-material_198",
+      "Material_001-material_199",
+      "Main_Truck_4_Mat_0_002",
+      "Main_Truck_3_Mat_0_002",
+      "Main_Truck_2_Mat_0_003",
+      "Main_Truck_2_Mat_0_004",
+      "Main_Truck_1_Mat_0_003",
+      "Main_Truck_1_Mat_0_004",
+      "Lowpoly_Tree_14_Material_002_0_001",
+      "Lowpoly_Tree_12_Material_002_0_003",
+      "Lowpoly_Tree_12_Material_002_0_004",
+      "Lowpoly_Tree_12_Material_002_0_005",
+      "Lowpoly_Tree_11_Material_0_017",
+      "Lowpoly_Tree_10_Material_0_003",
+      "Lowpoly_Tree_04_Material_0_022",
+      "Lowpoly_Tree_03_Material_0_009",
+      "Light_Mat_0_001_015",
+      "Light_Mat_0_001_016",
+      "Light_Mat_0_001_017",
+      "Light_Mat_0_001_018",
+      "Light_Mat_0_001_019",
+      "Light_Mat_0_001_020",
+      "Light_Mat_0_001_021",
+      "Light_Mat_0_001_022",
+      "Light_Mat_0_001_023",
+      "Light_Mat_0_001_024",
+      "Light_Mat_0_001_025",
+      "Light_Mat_0_001_026",
+      "Light_Mat_0_001_027",
+      "Hydrant_Mat_0_007",
+      "Hydrant_Mat_0_008",
+      "Hydrant_Mat_0_009",
+      "Hydrant_Mat_0_010",
+      "Hydrant_Mat_0_011",
+      "Hydrant_Mat_0_012",
+      "Gas_Truck_Mat_0_002",
+      "Fire_Truck_Mat_0_002",
+      "Fencing_003",
+      "Fencing_005",
+      "Fencing_006",
+      "Excavator_Mat_0_002",
+      "Collider_Cafe_Collider_0_001_001",
+      "Cinema_Texture_buildings1_0_001_001",
+      "Car_3_3_Mat_0_004",
+      "Car_3_3_Mat_0_005",
+      "Car_3_3_Mat_0_006",
+      "Car_3_2_Mat_0_002",
+      "Car_3_1_Mat_0_003",
+      "Car_3_1_Mat_0_004",
+      "Car_2_3_Mat_0_002",
+      "Car_1_3_Mat_0_003",
+      "Car_1_3_Mat_0_004",
+      "Car_1_2_Mat_0_002",
+      "Car_1_1_Mat_0_002",
+      "CafeBuilding_Texture_buildings1_0_001_001",
+      "Bus_3_Mat_0_002",
+      "Bus_2_Mat_0_002",
+      "Bulldozer_Mat_0_003",
+      "Building_8_Mat_0_003",
+      "Building_6_Mat_0_002",
+      "Building_5_Mat_0_003",
+      "Building_4_Mat_0_002",
+      "Building_3_Mat_0_003",
+      "Building_2_Mat_0_002",
+      "Building_1_Mat_0_004",
+      "Ambulance_Mat_0_003",
+      "Ambulance_Mat_0_004"
+    ];
+
+
+    
+    // Store ground collision objects
+    this.groundColliders = [];
     
     this.init();
   }
@@ -84,19 +245,107 @@ class MainScene {
     this.createScene();
     this.createCamera();
     this.createRenderer();
-    this.createControls();
+    this.createSky();        
+    // this.createControls();
     this.createLights();
     this.createGround();
     this.createRaceTrack();
-    this.createEnvironmentObjects(); // Add racing environment decorations
+    this.createCity();
+    this.createEnvironmentObjects(); 
     this.setupEventListeners();
     this.animate();
   }
 
   createScene() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0a0f16);
-    this.scene.fog = new THREE.Fog(0x0a0f16, 50, 200);
+    // We'll set the background in createSky() for better control
+    this.scene.fog = new THREE.Fog(0xa3c1e0, 300, 1200); // Slightly hazy atmospheric fog
+  }
+
+  createSky() {
+    console.log('Creating realistic gradient sky...');
+    
+    // Create much larger sky dome to eliminate visible edges
+    const skyGeometry = new THREE.SphereGeometry(5000, 32, 16); 
+    
+    // Create realistic sky gradient shader
+    const skyMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        topColor: { value: new THREE.Color(0x0077ff) },    
+        horizonColor: { value: new THREE.Color(0xa3c1e0) }, 
+        groundColor: { value: new THREE.Color(0xe6f2ff) },  
+        sunDirection: { value: new THREE.Vector3(0.5, 0.8, 0.2) },
+        sunColor: { value: new THREE.Color(0xfff8dc) },    
+        sunIntensity: { value: 0.15 }
+      },
+      vertexShader: `
+        varying vec3 vWorldPosition;
+        varying vec3 vDirection;
+        
+        void main() {
+          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+          vWorldPosition = worldPosition.xyz;
+          vDirection = normalize(position);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 topColor;
+        uniform vec3 horizonColor; 
+        uniform vec3 groundColor;
+        uniform vec3 sunDirection;
+        uniform vec3 sunColor;
+        uniform float sunIntensity;
+        
+        varying vec3 vWorldPosition;
+        varying vec3 vDirection;
+        
+        void main() {
+          float height = normalize(vDirection).y;
+          
+          // Create smooth gradient from top to horizon to ground
+          vec3 skyColor;
+          if (height > 0.0) {
+            // Above horizon - blend from horizon to top
+            float factor = smoothstep(0.0, 0.6, height);
+            skyColor = mix(horizonColor, topColor, factor);
+          } else {
+            // Below horizon - blend from ground to horizon
+            float factor = smoothstep(-0.3, 0.0, height);
+            skyColor = mix(groundColor, horizonColor, factor);
+          }
+          
+          // Add subtle sun glow effect
+          float sunEffect = max(0.0, dot(normalize(vDirection), normalize(sunDirection)));
+          sunEffect = pow(sunEffect, 8.0);
+          skyColor += sunColor * sunEffect * sunIntensity;
+          
+          gl_FragColor = vec4(skyColor, 1.0);
+        }
+      `,
+      side: THREE.BackSide,
+      depthWrite: false,  // Don't write to depth buffer
+      depthTest: false    // Don't test depth - always render behind everything
+    });
+    
+    const skyDome = new THREE.Mesh(skyGeometry, skyMaterial);
+    skyDome.name = 'RealisticSky';
+    skyDome.renderOrder = -100; // Ensure it renders first/behind everything
+    skyDome.frustumCulled = false; // Never cull the sky dome
+    this.scene.add(skyDome);
+    
+    // Set scene background to match horizon color as fallback
+    this.scene.background = new THREE.Color(0xa3c1e0);
+    
+    // Add subtle atmospheric light
+    const atmosphericLight = new THREE.HemisphereLight(
+      0xa3c1e0, // Sky color
+      0x5c8a5c, // Ground color (greenish)
+      0.3       // Intensity
+    );
+    this.scene.add(atmosphericLight);
+    
+    console.log('Realistic gradient sky created with no visible edges');
   }
 
   createCamera() {
@@ -113,7 +362,7 @@ class MainScene {
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.VSMShadowMap; // Changed to VSM for smoother shadows
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1;
@@ -121,50 +370,56 @@ class MainScene {
     this.container.appendChild(this.renderer.domElement);
   }
 
-  createControls() {
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.05;
-    this.controls.screenSpacePanning = false;
-    this.controls.minDistance = 1;
-    this.controls.maxDistance = 100;
-    this.controls.maxPolarAngle = Math.PI / 2;
-  }
+  // Camera mode toggle - currently disabled
+  // createControls() {
+  //   this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+  //   this.controls.enableDamping = true;
+  //   this.controls.dampingFactor = 0.05;
+  //   this.controls.screenSpacePanning = false;
+  //   this.controls.minDistance = 1;
+  //   this.controls.maxDistance = 500; // Increased from 100 to 500 for much better zoom out
+  //   this.controls.maxPolarAngle = Math.PI / 2;
+  // }
 
   createLights() {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     this.scene.add(ambientLight);
 
-    // Main directional light (sun) with better shadow coverage
+    // Main directional light (sun) with optimized shadow quality
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    directionalLight.position.set(10, 20, 5);
+    directionalLight.position.set(50, 100, 50); // Higher and more centered position
     directionalLight.castShadow = true;
     
     this.directionalLight = directionalLight;
     
-    directionalLight.shadow.camera.left = -50;
-    directionalLight.shadow.camera.right = 50;
-    directionalLight.shadow.camera.top = 50;
-    directionalLight.shadow.camera.bottom = -50;
+    // Optimized shadow camera coverage - balance between coverage and quality
+    directionalLight.shadow.camera.left = -200;   // Reduced for better quality
+    directionalLight.shadow.camera.right = 200;   // Reduced for better quality
+    directionalLight.shadow.camera.top = 200;     // Reduced for better quality
+    directionalLight.shadow.camera.bottom = -200; // Reduced for better quality
     directionalLight.shadow.camera.near = 0.1;
-    directionalLight.shadow.camera.far = 100;
+    directionalLight.shadow.camera.far = 200;     // Optimized depth range
     
-    //higher resolution shadow map
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
+    // Higher resolution shadow map for smooth shadows
+    directionalLight.shadow.mapSize.width = 4096;  // Increased from 2048
+    directionalLight.shadow.mapSize.height = 4096; // Increased from 2048
     
-    //softer shadows
-    directionalLight.shadow.radius = 5;
-    directionalLight.shadow.blurSamples = 10;
+    // Anti-aliasing and smoothing settings
+    directionalLight.shadow.radius = 8;            // Increased blur radius
+    directionalLight.shadow.blurSamples = 15;      // More blur samples for smooth edges
+    
+    // Add shadow bias to prevent shadow acne
+    directionalLight.shadow.bias = -0.0005;        // Prevents shadow stripping
+    directionalLight.shadow.normalBias = 0.02;     // Additional bias for normal-based offset
     
     this.scene.add(directionalLight);
 
-    //secondary fill light to reduce harsh shadows
+    // Secondary fill light to reduce harsh shadows
     const fillLight = new THREE.DirectionalLight(0x87ceeb, 0.3);
-    fillLight.position.set(-10, 10, -5);
+    fillLight.position.set(-50, 50, -50);
     this.scene.add(fillLight);
 
-
+    // Enable shadow camera helper to visualize coverage (uncomment for debugging)
     // const helper = new THREE.CameraHelper(directionalLight.shadow.camera);
     // this.scene.add(helper);
   }
@@ -230,25 +485,798 @@ class MainScene {
 
     // Grid helper positioned below the raised ground - make it larger for extended surface
     const gridHelper = new THREE.GridHelper(600, 600, 0x444444, 0x222222);
-    gridHelper.position.y = -0.1; // Below the raised ground
+    gridHelper.position.y = -0.1; 
     gridHelper.receiveShadow = true;
     this.scene.add(gridHelper);
     
-    console.log('Extended ground created - Original + Left duplicate for much larger surface');
+    // Add large static green plane surface to completely hide grid
+    const groundPlaneGeometry = new THREE.PlaneGeometry(3000, 3000, 1, 1); // Even larger plane
+    const groundPlaneMaterial = new THREE.MeshLambertMaterial({
+      color: 0x4a7c59, // Natural grass green color
+      transparent: false,
+      fog: true // Allow fog to affect the ground plane for natural distance fade
+    });
+    
+    const groundPlane = new THREE.Mesh(groundPlaneGeometry, groundPlaneMaterial);
+    groundPlane.rotation.x = -Math.PI / 2; // Rotate to lie flat
+    groundPlane.position.set(0, -0.05, 0); // Position between grid (-0.1) and natural ground (0.3)
+    groundPlane.receiveShadow = true;
+    groundPlane.castShadow = false;
+    groundPlane.name = 'ground_plane_surface';
+    groundPlane.matrixAutoUpdate = false; // Make it completely static
+    groundPlane.updateMatrix(); // Update matrix once and freeze it
+    
+    this.scene.add(groundPlane);
+    this.objects.push({ mesh: groundPlane, type: 'ground-plane' });
+    
+    // Alternative: Hide the grid helper completely since we have green plane
+    gridHelper.visible = false; // Hide grid since green plane covers it
+    
+    console.log('Extended ground created with static green surface plane hiding grid');
+  }
+
+
+  // Load and position city model
+  async createCity() {
+    console.log('Loading city model...');
+    try {
+      await this.loadCityModel('/city6.glb', 
+        { x: -70, y: -5, z: 60 }, 
+        { x: 1.0, y: 1.0, z: 1.0 } 
+      );
+      console.log('City model loaded and positioned successfully');
+    } catch (error) {
+      console.error('Failed to load city model:', error);
+      // Creating fallback city structures if model fails to load
+      this.createFallbackCity();
+    }
+  }
+
+  // Loading city  model
+  async loadCityModel(url = '/city6.glb', position = { x: 100, y: 0.3, z: 0 }, scale = { x: 1.0, y: 1.0, z: 1.0 }) {
+    const manager = new THREE.LoadingManager();
+    manager.setURLModifier((requestedUrl) => {
+      console.log('[CITY] Loading resource:', requestedUrl);
+      return requestedUrl;
+    });
+
+    const loader = new GLTFLoader(manager);
+
+    try {
+      console.log(`Loading city model from: ${url} at position (${position.x}, ${position.y}, ${position.z})`);
+      const gltf = await new Promise((resolve, reject) => {
+        loader.load(url, resolve, undefined, reject);
+      });
+
+      const cityModel = gltf.scene;
+      cityModel.position.set(position.x, position.y, position.z);
+      cityModel.scale.set(scale.x, scale.y, scale.z);
+      
+      // Rotate city model 90 degrees on Y-axis
+      cityModel.rotation.y = Math.PI / 2; // 90 degrees in radians
+      
+      console.log(`City model scaled: X=${scale.x}, Y=${scale.y}, Z=${scale.z} at position (${position.x}, ${position.y}, ${position.z}) with Y rotation: 90°`);
+      
+      // Calculate city bounds for collision detection
+      const box = new THREE.Box3().setFromObject(cityModel);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      
+      console.log('City model bounds:', {
+        size: size,
+        center: center,
+        min: box.min,
+        max: box.max
+      });
+      
+      // Configure materials for all city meshes - disable shadows for performance
+      cityModel.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;     
+          child.receiveShadow = true;
+
+          // Optimize materials for better performance
+          if (child.material) {
+            child.material.needsUpdate = true;
+            
+            // Add subtle emissive lighting for city buildings at night
+            if (child.material.emissive) {
+              child.material.emissive.setHex(0x001122);
+              child.material.emissiveIntensity = 0.1;
+            }
+          }
+        }
+        // console.log('City model child:', child);
+      });
+
+      this.scene.add(cityModel);
+      this.objects.push({ mesh: cityModel, type: 'city', gltf, bounds: box });
+      
+      // Add collision detection using specific mesh names
+      // this.setupCityMeshCollisions(cityModel); // OLD BOX3 SYSTEM - COMMENTED OUT  
+      this.setupCityBVHCollisions(cityModel); // NEW BVH SYSTEM
+      this.setupGroundCollisions(cityModel); // GROUND COLLISION SYSTEM
+      
+      console.log('City model loaded successfully:', url);
+      return cityModel;
+    } catch (error) {
+      console.error('Error loading city model:', error);
+      throw error;
+    }
+  }
+
+  // Setup collision detection using specific city mesh names
+  setupCityMeshCollisions(cityModel) {
+    console.log('Setting up city mesh-based collision detection...');
+    console.log('Looking for these collision meshes:', this.cityCollisionsMesh);
+    
+    let collisionMeshesFound = 0;
+    const foundMeshNames = [];
+    const allMeshNames = [];
+    
+    // First pass: collect all mesh names for debugging
+    cityModel.traverse((child) => {
+      if (child.isMesh) {
+        allMeshNames.push(child.name);
+      }
+    });
+    
+    console.log('All available mesh names in city model:', allMeshNames);
+    
+    // Second pass: find collision meshes by name
+    cityModel.traverse((child) => {
+      if (child.isMesh && this.cityCollisionsMesh.includes(child.name)) {
+        // Calculate bounding box for this specific mesh
+        const box = new THREE.Box3().setFromObject(child);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        
+        // Set small, realistic collision radius (in meters) - much closer collision detection
+        let collisionRadius;
+        if (child.name.includes('Building') || child.name.includes('Collider')) {
+          // Buildings - close collision (3-4 meters from surface)
+          collisionRadius = 4;
+        } else if (child.name.includes('Tree')) {
+          // Trees - very close collision (2 meters)
+          collisionRadius = 2;
+        } else if (child.name.includes('Car') || child.name.includes('Traffic')) {
+          // Cars - very close collision (1.5 meters)
+          collisionRadius = 1.5;
+        } else {
+          // Default close collision (2.5 meters)
+          collisionRadius = 2.5;
+        }
+        
+        // BOX3 COLLISION - COMMENTED OUT FOR BVH IMPLEMENTATION
+        // // Add BOX collision detection for this mesh
+        // this.environmentColliders.push({
+        //   position: center.clone(),
+        //   size: size.clone(),
+        //   box: box.clone(),
+        //   type: `city-mesh-${child.name}`,
+        //   mesh: child,
+        //   meshName: child.name
+        // });
+
+        // // DEBUG: Add visual box helper (only create once, not every frame)
+        // if (!this.debugHelpersCreated) {
+        //   const helper = new THREE.Box3Helper(box, 0xff0000);
+        //   this.scene.add(helper);
+        // }
+
+        // DEBUG: Add visual sphere to show collision radius
+        // const debugGeometry = new THREE.SphereGeometry(collisionRadius, 16, 8);
+        // const debugMaterial = new THREE.MeshBasicMaterial({
+        //   color: 0x00ff00,
+        //   wireframe: true,
+        //   transparent: true,
+        //   opacity: 0.3
+        // });
+        // const debugSphere = new THREE.Mesh(debugGeometry, debugMaterial);
+        // debugSphere.position.copy(center);
+        // this.scene.add(debugSphere);
+        
+        foundMeshNames.push(child.name);
+        collisionMeshesFound++;
+        console.log(`✅ Added collision for: ${child.name} (radius: ${collisionRadius.toFixed(2)})`);
+      }
+    });
+    
+    console.log(`City collision setup complete: ${collisionMeshesFound}/${this.cityCollisionsMesh.length} meshes found`);
+    
+    // Check for missing meshes with suggestions
+    const missingMeshes = this.cityCollisionsMesh.filter(name => !foundMeshNames.includes(name));
+    if (missingMeshes.length > 0) {
+      console.warn('❌ Missing collision meshes:', missingMeshes);
+      
+      // Try to find similar mesh names for suggestions
+      missingMeshes.forEach(missingName => {
+        const similarNames = allMeshNames.filter(name => 
+          name.toLowerCase().includes(missingName.toLowerCase().split('_')[0]) ||
+          missingName.toLowerCase().includes(name.toLowerCase().split('_')[0])
+        );
+        if (similarNames.length > 0) {
+          console.log(`💡 Possible matches for "${missingName}":`, similarNames);
+        }
+      });
+    } else {
+      console.log('✅ All collision meshes found successfully!');
+    }
+    
+    // Mark debug helpers as created to prevent recreation
+    this.debugHelpersCreated = true;
+    
+    // If no collision meshes were found, create fallback collision detection
+    if (collisionMeshesFound === 0) {
+      console.warn('⚠️ No collision meshes found by exact name match. Creating fallback collision system...');
+      this.createFallbackCityCollisions(cityModel, allMeshNames);
+    }
+  }
+
+  // Create fallback collision system when exact mesh names don't match
+  createFallbackCityCollisions(cityModel, allMeshNames) {
+    console.log('Creating fallback collision system for city...');
+    
+    let fallbackCollisions = 0;
+    
+    // Create collisions for meshes that seem like collision candidates
+    cityModel.traverse((child) => {
+      if (child.isMesh) {
+        const name = child.name.toLowerCase();
+        
+        // Check if this mesh looks like a collision candidate
+        const isCollisionCandidate = (
+          name.includes('building') ||
+          name.includes('collider') ||
+          name.includes('tree') ||
+          name.includes('car') ||
+          name.includes('traffic') ||
+          name.includes('object') ||
+          name.includes('public') ||
+          name.includes('school') ||
+          name.includes('hospital') ||
+          name.includes('gas') ||
+          name.includes('light') ||
+          name.includes('excavator')
+        );
+        
+        if (isCollisionCandidate) {
+          // Calculate bounding box for this mesh
+          const box = new THREE.Box3().setFromObject(child);
+          const size = box.getSize(new THREE.Vector3());
+          const center = box.getCenter(new THREE.Vector3());
+          
+          // Skip very small objects (likely details)
+          if (size.x < 0.5 && size.z < 0.5) {
+            return;
+          }
+          
+          // BOX3 COLLISION - COMMENTED OUT FOR BVH IMPLEMENTATION
+          // // Add BOX collision detection for this mesh
+          // this.environmentColliders.push({
+          //   position: center.clone(),
+          //   size: size.clone(),
+          //   box: box.clone(),
+          //   type: `fallback-city-${child.name}`,
+          //   mesh: child,
+          //   meshName: child.name
+          // });
+
+          // // DEBUG: Add visual box helper (only create once, not every frame)
+          // if (!this.debugHelpersCreated) {
+          //   const helper = new THREE.Box3Helper(box, 0xffff00);
+          //   this.scene.add(helper);
+          // }
+          
+          fallbackCollisions++;
+          console.log(`🔄 Fallback collision added: ${child.name} (box size: ${size.x.toFixed(1)}x${size.y.toFixed(1)}x${size.z.toFixed(1)})`);
+        }
+      }
+    });
+    
+    // Mark debug helpers as created to prevent recreation
+    this.debugHelpersCreated = true;
+    console.log(`Fallback collision system created: ${fallbackCollisions} collisions added`);
+  }
+
+  // NEW BVH COLLISION SYSTEM
+  setupCityBVHCollisions(cityModel) {
+    console.log('Setting up BVH collision system for city...');
+    
+    let bvhMeshesFound = 0;
+    
+    // First, find all meshes that should have collision
+    const targetMeshNames = this.cityCollisionsMesh;
+    console.log('Target collision meshes:', targetMeshNames);
+
+    cityModel.traverse((child) => {
+      if (child.isMesh && child.geometry) {
+        // Check if this mesh should have collision
+        const shouldHaveCollision = targetMeshNames.some(targetName => 
+          child.name === targetName || child.name === targetName.replace(/_/g, '.')
+        );
+
+        if (shouldHaveCollision) {
+          // console.log(`Creating BVH for collision mesh: ${child.name}`);
+          
+          // Create BVH for this mesh
+          child.geometry.computeBoundsTree();
+          
+          // Store the mesh for collision detection
+          this.bvhColliders.push({
+            mesh: child,
+            name: child.name,
+            type: 'city-bvh'
+          });
+
+          // // Create BVH visualizer for debugging (simple wireframe)
+          // if (!this.debugHelpersCreated) {
+          //   // Create a simple wireframe mesh for visualization instead of MeshBVHVisualizer
+          //   const wireframeGeometry = child.geometry.clone();
+          //   const wireframeMaterial = new THREE.MeshBasicMaterial({
+          //     color: 0x00ff00,
+          //     wireframe: true,
+          //     transparent: true,
+          //     opacity: 0.3
+          //   });
+          //   const wireframeMesh = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
+            
+          //   // Apply the world transformation matrix to get correct position/rotation/scale
+          //   child.updateWorldMatrix(true, false);
+          //   wireframeMesh.applyMatrix4(child.matrixWorld);
+            
+          //   this.scene.add(wireframeMesh);
+          //   this.bvhVisualizers.push(wireframeMesh);
+          // }
+          
+          bvhMeshesFound++;
+        }
+      }
+    });
+
+    // Mark debug helpers as created
+    this.debugHelpersCreated = true;
+    
+    console.log(`BVH collision system setup complete: ${bvhMeshesFound} meshes processed`);
+    
+    // If no BVH meshes found, create fallback
+    if (bvhMeshesFound === 0) {
+      console.warn('⚠️ No BVH collision meshes found. Creating fallback BVH system...');
+      this.createFallbackBVHCollisions(cityModel);
+    }
+  }
+
+  // Create fallback BVH collisions for all significant meshes
+  createFallbackBVHCollisions(cityModel) {
+    console.log('Creating fallback BVH collision system...');
+    
+    let fallbackBVHCount = 0;
+    
+    cityModel.traverse((child) => {
+      if (child.isMesh && child.geometry) {
+        // Skip very small objects
+        const box = new THREE.Box3().setFromObject(child);
+        const size = box.getSize(new THREE.Vector3());
+        
+        if (size.x < 0.5 && size.z < 0.5) return;
+        
+        console.log(`🔄 Creating fallback BVH for: ${child.name}`);
+        
+        // Create BVH for this mesh
+        child.geometry.computeBoundsTree();
+        
+        // Store the mesh for collision detection
+        this.bvhColliders.push({
+          mesh: child,
+          name: child.name,
+          type: 'fallback-bvh'
+        });
+
+        // Create BVH visualizer for debugging (yellow wireframe for fallback)
+        if (!this.debugHelpersCreated) {
+          // Create a simple wireframe mesh for visualization
+          const wireframeGeometry = child.geometry.clone();
+          const wireframeMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffff00,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.3
+          });
+          const wireframeMesh = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
+          
+          // Apply the world transformation matrix to get correct position/rotation/scale
+          child.updateWorldMatrix(true, false);
+          wireframeMesh.applyMatrix4(child.matrixWorld);
+          
+          this.scene.add(wireframeMesh);
+          this.bvhVisualizers.push(wireframeMesh);
+        }
+        
+        fallbackBVHCount++;
+      }
+    });
+    
+    console.log(`Fallback BVH system created: ${fallbackBVHCount} collisions added`);
+  }
+
+  // Setup ground collision detection to prevent drone from going below terrain
+  setupGroundCollisions(cityModel) {
+    console.log('Setting up ground collision system...');
+    console.log('Target ground meshes:', this.groundCollisionsMesh);
+    
+    let groundMeshesFound = 0;
+    
+    cityModel.traverse((child) => {
+      if (child.isMesh && child.geometry) {
+        // Check if this mesh is a ground/road mesh
+        const shouldHaveGroundCollision = this.groundCollisionsMesh.some(targetName => 
+          child.name === targetName || child.name === targetName.replace(/_/g, '.')
+        );
+
+        if (shouldHaveGroundCollision) {
+          console.log(`🌍 Creating ground collision for: ${child.name}`);
+          
+          // Calculate bounding box for ground height detection
+          child.geometry.computeBoundingBox();
+          const bbox = child.geometry.boundingBox.clone();
+          
+          // Transform bounding box to world coordinates
+          child.updateWorldMatrix(true, false);
+          bbox.applyMatrix4(child.matrixWorld);
+          
+          // Store ground collision data
+          this.groundColliders.push({
+            mesh: child,
+            name: child.name,
+            type: 'ground',
+            bbox: bbox,
+            minY: bbox.min.y,
+            maxY: bbox.max.y
+          });
+
+          // Create ground BVH for raycasting
+          child.geometry.computeBoundsTree();
+          
+          // Visual debug (blue wireframe for ground)
+          if (!this.debugHelpersCreated) {
+            const wireframeGeometry = child.geometry.clone();
+            const wireframeMaterial = new THREE.MeshBasicMaterial({
+              color: 0x0066ff,
+              wireframe: true,
+              transparent: true,
+              opacity: 0.2
+            });
+            const wireframeMesh = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
+            
+            child.updateWorldMatrix(true, false);
+            wireframeMesh.applyMatrix4(child.matrixWorld);
+            
+            this.scene.add(wireframeMesh);
+            this.bvhVisualizers.push(wireframeMesh);
+          }
+          
+          groundMeshesFound++;
+        }
+      }
+    });
+    
+    console.log(`Ground collision system setup complete: ${groundMeshesFound} ground meshes processed`);
+    
+    if (groundMeshesFound === 0) {
+      console.warn('⚠️ No ground collision meshes found. Creating fallback ground collision...');
+      this.createFallbackGroundCollision();
+    }
+  }
+
+  // Create fallback ground collision at y=0.3 (default ground height)
+  createFallbackGroundCollision() {
+    console.log('Creating fallback ground collision plane...');
+    
+    // Create a large invisible ground plane as fallback
+    const groundGeometry = new THREE.PlaneGeometry(500, 500);
+    const groundMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0x00ff00, 
+      transparent: true, 
+      opacity: 0.1, 
+      visible: false 
+    });
+    
+    const fallbackGround = new THREE.Mesh(groundGeometry, groundMaterial);
+    fallbackGround.rotation.x = -Math.PI / 2;
+    fallbackGround.position.set(0, 0.3, 0); // Match the raised ground height
+    fallbackGround.name = 'fallback_ground';
+    
+    // Add to scene but make invisible
+    fallbackGround.visible = false;
+    this.scene.add(fallbackGround);
+    
+    // Add to ground colliders
+    fallbackGround.geometry.computeBoundingBox();
+    fallbackGround.geometry.computeBoundsTree();
+    
+    this.groundColliders.push({
+      mesh: fallbackGround,
+      name: 'fallback_ground',
+      type: 'fallback-ground',
+      bbox: new THREE.Box3(
+        new THREE.Vector3(-250, 0.2, -250),
+        new THREE.Vector3(250, 0.4, 250)
+      ),
+      minY: 0.2,
+      maxY: 0.4
+    });
+    
+    console.log('Fallback ground collision created at y=0.3');
+  }
+
+  // Simple but RELIABLE collision detection using raycasting
+  checkBVHCollisions() {
+    if (!this.droneModel || this.bvhColliders.length === 0) return;
+    
+    const currentPos = this.droneState.pos.clone();
+    const velocity = this.droneState.vel.clone();
+    const deltaTime = 0.016; // Assume 60fps
+    
+    // Calculate where drone WILL BE next frame
+    const nextPos = currentPos.clone().addScaledVector(velocity, deltaTime);
+    
+    // Check if movement would cause collision
+    const moveDirection = new THREE.Vector3().subVectors(nextPos, currentPos).normalize();
+    const moveDistance = currentPos.distanceTo(nextPos);
+    
+    // Cast multiple rays from drone in movement direction
+    const raycaster = new THREE.Raycaster();
+    const droneRadius = 1.0; // Safety radius
+    
+    // Main ray in movement direction
+    raycaster.set(currentPos, moveDirection);
+    
+    // Get all collision meshes for raycasting
+    const collisionMeshes = this.bvhColliders.map(collider => collider.mesh);
+    
+    // Check main movement ray
+    const intersects = raycaster.intersectObjects(collisionMeshes, true);
+    
+    if (intersects.length > 0) {
+      const hit = intersects[0];
+      const hitDistance = hit.distance;
+      
+      // If collision would happen within drone radius + movement
+      if (hitDistance < droneRadius + moveDistance) {
+        console.warn(`Blocking collision with: ${hit.object.name || 'unknown'}`);
+        
+        // STOP the drone movement completely
+        this.blockMovement(hit, currentPos, moveDirection);
+        return;
+      }
+    }
+    
+    // Additional safety: Check if drone is currently inside any mesh
+    this.checkIfInsideMesh(currentPos);
+    
+    // GROUND COLLISION - Prevent drone from going below terrain
+    this.checkGroundCollision(currentPos, nextPos);
+  }
+  
+  // Block movement and provide collision response
+  blockMovement(hit, currentPos, moveDirection) {
+    // Stop drone at safe distance from collision
+    const safeDistance = 1.2;
+    const hitNormal = hit.normal;
+    
+    // Position drone at safe distance from hit point
+    const safePos = hit.point.clone().addScaledVector(hitNormal, safeDistance);
+    this.droneState.pos.copy(safePos);
+    
+    // Remove velocity component going into collision
+    const velocityIntoSurface = this.droneState.vel.dot(hitNormal.clone().negate());
+    if (velocityIntoSurface > 0) {
+      this.droneState.vel.addScaledVector(hitNormal.clone().negate(), -velocityIntoSurface);
+    }
+    
+    // Add bounce effect
+    this.droneState.vel.addScaledVector(hitNormal, 2.0);
+    
+    // Flash hit object red
+    // if (hit.object.material && hit.object.material.color) {
+    //   const originalColor = hit.object.material.color.clone();
+    //   hit.object.material.color.setHex(0xff0000);
+    //   setTimeout(() => {
+    //     hit.object.material.color.copy(originalColor);
+    //   }, 200);
+    // }
+  }
+  
+  // Emergency check if drone somehow got inside mesh
+  checkIfInsideMesh(currentPos) {
+    const raycaster = new THREE.Raycaster();
+    const directions = [
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(-1, 0, 0),
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, -1, 0),
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 0, -1)
+    ];
+    
+    const collisionMeshes = this.bvhColliders.map(collider => collider.mesh);
+    
+    directions.forEach(direction => {
+      raycaster.set(currentPos, direction);
+      const intersects = raycaster.intersectObjects(collisionMeshes, true);
+      
+      if (intersects.length > 0 && intersects[0].distance < 0.5) {
+        console.error("Drone inside mesh! Emergency escape!");
+        // Emergency teleport upward
+        this.droneState.pos.y += 3.0;
+        this.droneState.vel.set(0, 5, 0); // Strong upward velocity
+      }
+    });
+  }
+
+  // Ground collision detection - prevent drone from going below terrain
+  checkGroundCollision(currentPos, nextPos) {
+    if (this.groundColliders.length === 0) return;
+    
+    const droneRadius = 1.2; 
+    const minimumHeight = 1.5; 
+    
+    // Cast ray downward from drone to find ground height
+    const raycaster = new THREE.Raycaster();
+    const downDirection = new THREE.Vector3(0, -1, 0);
+    
+    // Cast from current position
+    raycaster.set(currentPos, downDirection);
+    
+    // Get all ground meshes for raycasting
+    const groundMeshes = this.groundColliders.map(collider => collider.mesh);
+    const groundIntersects = raycaster.intersectObjects(groundMeshes, true);
+    
+    if (groundIntersects.length > 0) {
+      const groundHit = groundIntersects[0];
+      const groundHeight = groundHit.point.y;
+      const requiredHeight = groundHeight + droneRadius;
+      
+      // If drone is too close to ground, adjust position
+      if (currentPos.y < requiredHeight) {
+        console.log(`Ground collision detected! Ground height: ${groundHeight.toFixed(2)}, Drone height: ${currentPos.y.toFixed(2)}, Required: ${requiredHeight.toFixed(2)}`);
+        
+        // IMMEDIATELY push drone to safe height (no gradual adjustment)
+        this.droneState.pos.y = requiredHeight + 0.2; // Extra buffer
+        
+        // COMPLETELY stop downward velocity
+        if (this.droneState.vel.y < 0) {
+          this.droneState.vel.y = 0;
+        }
+        
+        // Add stronger upward bounce to prevent re-collision
+        this.droneState.vel.y += 3.0;
+        
+        // Also prevent future downward movement for a moment
+        setTimeout(() => {
+          if (this.droneState.vel.y < 1.0) {
+            this.droneState.vel.y = 1.0; // Minimum upward velocity
+          }
+        }, 100);
+      }
+    } else {
+      // No ground detected - use fallback minimum height
+      if (currentPos.y < minimumHeight) {
+        console.log(`Using fallback ground height: ${minimumHeight}`);
+        this.droneState.pos.y = minimumHeight;
+        
+        if (this.droneState.vel.y < 0) {
+          this.droneState.vel.y = 0;
+        }
+        
+        this.droneState.vel.y += 1.0;
+      }
+    }
+    
+    // Enhanced predictive check: Cast ray from next position too
+    if (nextPos.y < currentPos.y) { // Only check if moving downward
+      raycaster.set(nextPos, downDirection);
+      const futureGroundIntersects = raycaster.intersectObjects(groundMeshes, true);
+      
+      if (futureGroundIntersects.length > 0) {
+        const futureGroundHeight = futureGroundIntersects[0].point.y;
+        const futureRequiredHeight = futureGroundHeight + droneRadius;
+        
+        if (nextPos.y < futureRequiredHeight) {
+          console.log(`Preventing future ground collision! Future ground: ${futureGroundHeight.toFixed(2)}, Future drone: ${nextPos.y.toFixed(2)}`);
+          // STRONGLY prevent movement that would cause ground collision
+          this.droneState.vel.y = Math.max(2.0, this.droneState.vel.y); // Force upward movement
+        }
+      }
+    }
+    
+    // Emergency check: If drone is moving down too fast near ground, force upward
+    if (currentPos.y - 2.0 < minimumHeight && this.droneState.vel.y < -5.0) {
+      console.log("Emergency ground collision prevention!");
+      this.droneState.vel.y = 3.0; // Force strong upward velocity
+      this.droneState.pos.y = Math.max(this.droneState.pos.y, minimumHeight + 1.0);
+    }
+  }
+
+  // Create fallback city structures if GLTF fails to load
+  createFallbackCity() {
+    console.log('Creating fallback city structures...');
+    
+    const cityGroup = new THREE.Group();
+    const buildingPositions = [
+      { x: 100, z: -20, width: 8, height: 15, depth: 8, color: 0x666666 },
+      { x: 90, z: -10, width: 6, height: 20, depth: 6, color: 0x777777 },
+      { x: 110, z: -15, width: 10, height: 12, depth: 10, color: 0x555555 },
+      { x: 85, z: 5, width: 7, height: 18, depth: 7, color: 0x888888 },
+      { x: 105, z: 10, width: 9, height: 14, depth: 9, color: 0x666666 },
+      { x: 120, z: 0, width: 8, height: 16, depth: 8, color: 0x777777 }
+    ];
+    
+    buildingPositions.forEach((building, index) => {
+      // Main building structure
+      const buildingGeometry = new THREE.BoxGeometry(building.width, building.height, building.depth);
+      const buildingMaterial = new THREE.MeshLambertMaterial({ 
+        color: building.color,
+        transparent: true,
+        opacity: 0.9
+      });
+      const buildingMesh = new THREE.Mesh(buildingGeometry, buildingMaterial);
+      buildingMesh.position.set(building.x, building.height / 2 + 0.3, building.z);
+      buildingMesh.castShadow = true;
+      buildingMesh.receiveShadow = true;
+      
+      cityGroup.add(buildingMesh);
+      
+      // Add simple windows
+      for (let floor = 1; floor < building.height / 3; floor++) {
+        for (let side = 0; side < 4; side++) {
+          const windowGeometry = new THREE.PlaneGeometry(0.8, 0.8);
+          const windowMaterial = new THREE.MeshBasicMaterial({ 
+            color: Math.random() > 0.7 ? 0xffff88 : 0x333333, // Some windows lit
+            transparent: true,
+            opacity: 0.8
+          });
+          const window = new THREE.Mesh(windowGeometry, windowMaterial);
+          
+          const angle = (side * Math.PI) / 2;
+          const radius = building.width * 0.5 + 0.01;
+          window.position.set(
+            building.x + Math.cos(angle) * radius,
+            floor * 3 + 0.3,
+            building.z + Math.sin(angle) * radius
+          );
+          window.rotation.y = angle;
+          
+          cityGroup.add(window);
+        }
+      }
+      
+      // Add collision detection for each building
+      this.environmentColliders.push({
+        position: new THREE.Vector3(building.x, building.height / 2 + 0.3, building.z),
+        radius: Math.max(building.width, building.depth) * 0.6,
+        type: `fallback-building-${index}`,
+        mesh: buildingMesh
+      });
+    });
+    
+    this.scene.add(cityGroup);
+    this.objects.push({ mesh: cityGroup, type: 'fallback-city' });
+    console.log('Fallback city structures created successfully');
   }
 
     //load the natural ground polycab model with position parameters
     async loadGround(url = '/natural_ground_lowpoly/scene.gltf', scaleX = 3.0, scaleZ = 3.0, scaleY = 1.0, posX = 0, posY = 0, posZ = 0) {
       const manager = new THREE.LoadingManager();
       manager.setURLModifier((requestedUrl) => {
-        console.log('[GROUND] Loading resource:', requestedUrl);
+        // console.log('[GROUND] Loading resource:', requestedUrl);
         return requestedUrl;
       });
 
       const loader = new GLTFLoader(manager);
 
       try {
-        console.log(`Loading ground model from: ${url} at position (${posX}, ${posY}, ${posZ})`);
+        // console.log(`Loading ground model from: ${url} at position (${posX}, ${posY}, ${posZ})`);
         const gltf = await new Promise((resolve, reject) => {
           loader.load(url, resolve, undefined, reject);
         });
@@ -258,9 +1286,9 @@ class MainScene {
         
         // Scale differently on X, Y, Z axes
         groundModel.scale.set(scaleX, scaleY, scaleZ);
-        console.log(`Ground scaled: X=${scaleX}, Y=${scaleY}, Z=${scaleZ} at position (${posX}, ${posY}, ${posZ})`);
+        // console.log(`Ground scaled: X=${scaleX}, Y=${scaleY}, Z=${scaleZ} at position (${posX}, ${posY}, ${posZ})`);
         
-        console.log('Ground model loaded successfully');
+        // console.log('Ground model loaded successfully');
         
         // Enable shadows for all ground meshes
         groundModel.traverse((child) => {
@@ -745,23 +1773,45 @@ class MainScene {
   }
 
   // Check environment object collisions
-  checkEnvironmentCollisions() {
-    if (!this.droneModel || this.environmentColliders.length === 0) return;
+  // BOX3 COLLISION DETECTION - COMMENTED OUT FOR BVH IMPLEMENTATION
+  // checkEnvironmentCollisions() {
+  //   if (!this.droneModel || this.environmentColliders.length === 0) return;
     
-    const dronePosition = this.droneState.pos;
-    const droneRadius = 0.8; // Drone collision radius
-    
-    this.environmentColliders.forEach(collider => {
-      const distance = dronePosition.distanceTo(collider.position);
-      
-      if (distance < (collider.radius + droneRadius)) {
-        // Collision detected - apply response
-        this.handleEnvironmentCollision(collider, dronePosition);
-      }
-    });
-  }
+  //   // Throttle collision detection - only check every 3rd frame for better performance
+  //   this.collisionCheckInterval++;
+  //   if (this.collisionCheckInterval < 3) return;
+  //   this.collisionCheckInterval = 0;
 
-  // Handle collision response with environment objects
+  //   const dronePosition = this.droneState.pos;
+  //   const droneRadius = 0.8; // Drone collision radius
+    
+  //   this.environmentColliders.forEach(collider => {
+  //     // Use box collision detection instead of spherical
+  //     let collision = false;
+  //     let distance = 0;
+      
+  //     if (collider.box) {
+  //       // Check if drone is inside the bounding box (expanded by drone radius)
+  //       const expandedBox = collider.box.clone();
+  //       expandedBox.expandByScalar(droneRadius);
+        
+  //       if (expandedBox.containsPoint(dronePosition)) {
+  //         collision = true;
+  //         distance = dronePosition.distanceTo(collider.position);
+  //       }
+  //     } else if (collider.radius) {
+  //       // Fallback to old spherical collision for backwards compatibility
+  //       distance = dronePosition.distanceTo(collider.position);
+  //       collision = distance < (collider.radius + droneRadius);
+  //     }
+      
+  //     if (collision) {
+  //       // Collision detected - apply response
+  //       console.warn(`Collision detected of ${collider.meshName || collider.type} at distance ${distance.toFixed(2)}`);
+  //       this.handleEnvironmentCollision(collider, dronePosition);
+  //     }
+  //   });
+  // }  // Handle collision response with environment objects
   handleEnvironmentCollision(collider, dronePosition) {
     // Calculate collision normal (direction from object to drone)
     const collisionNormal = new THREE.Vector3()
@@ -769,7 +1819,17 @@ class MainScene {
       .normalize();
     
     // Push drone away from the object
-    const pushDistance = collider.radius + 0.8; // Drone radius
+    let pushDistance;
+    if (collider.box) {
+      // For box collision, push to nearest edge of box + drone radius
+      const boxSize = collider.size;
+      const maxDimension = Math.max(boxSize.x, boxSize.z);
+      pushDistance = maxDimension * 0.7 + 0.8; // 70% of max dimension + drone radius
+    } else {
+      // Fallback to old spherical collision
+      pushDistance = collider.radius + 0.8; // Drone radius
+    }
+    
     const targetPosition = new THREE.Vector3()
       .copy(collider.position)
       .addScaledVector(collisionNormal, pushDistance);
@@ -783,13 +1843,37 @@ class MainScene {
       this.droneState.vel.addScaledVector(collisionNormal, -velocityInNormal * 0.8);
     }
     
-    // Add some bounce effect
-    this.droneState.vel.addScaledVector(collisionNormal, 2);
+    // Add some bounce effect based on object type
+    let bounceStrength = 2;
+    if (collider.type.includes('city-mesh')) {
+      // Different bounce effects for different city objects
+      if (collider.meshName && collider.meshName.includes('Building')) {
+        bounceStrength = 3; // Buildings provide stronger bounce
+      } else if (collider.meshName && collider.meshName.includes('Tree')) {
+        bounceStrength = 1.5; // Trees provide softer bounce
+      } else if (collider.meshName && collider.meshName.includes('Car')) {
+        bounceStrength = 2.5; // Cars provide medium bounce
+      }
+    }
+    this.droneState.vel.addScaledVector(collisionNormal, bounceStrength);
     
-    // Visual feedback - flash the object
+    // Enhanced visual feedback for city meshes
     if (collider.mesh && collider.mesh.material) {
       const originalColor = collider.mesh.material.color.clone();
-      collider.mesh.material.color.setHex(0xff4444);
+      
+      // Different flash colors for different city objects
+      let flashColor = 0xff4444; // Default red
+      if (collider.type.includes('city-mesh')) {
+        if (collider.meshName && collider.meshName.includes('Building')) {
+          flashColor = 0xff6600; // Orange for buildings
+        } else if (collider.meshName && collider.meshName.includes('Tree')) {
+          flashColor = 0xffff00; // Yellow for trees
+        } else if (collider.meshName && collider.meshName.includes('Car')) {
+          flashColor = 0xff0066; // Pink for cars
+        }
+      }
+      
+      collider.mesh.material.color.setHex(flashColor);
       setTimeout(() => {
         if (collider.mesh && collider.mesh.material) {
           collider.mesh.material.color.copy(originalColor);
@@ -797,7 +1881,9 @@ class MainScene {
       }, 200);
     }
     
-    console.log(`Collision with ${collider.type} at distance ${dronePosition.distanceTo(collider.position).toFixed(2)}`);
+    // Enhanced logging for city mesh collisions
+    const objectType = collider.meshName || collider.type;
+    console.log(`Collision with ${objectType} at distance ${dronePosition.distanceTo(collider.position).toFixed(2)}`);
   }
 
   // Handle hoop passage
@@ -1023,9 +2109,9 @@ class MainScene {
         mesh: treeGroup
       });
       
-      if (index % 10 === 0) { // Log every 10th tree for progress
-        console.log(`Trees created: ${index + 1}/${allTreePositions.length}`);
-      }
+      // if (index % 10 === 0) { 
+      //   console.log(`Trees created: ${index + 1}/${allTreePositions.length}`);
+      // }
     });
     
     console.log(`Forest environment completed - ${allTreePositions.length} trees with enhanced collision detection`);
@@ -1579,6 +2665,13 @@ class MainScene {
       this.droneModel = model;
       this.isLoadingDrone = false; // Clear loading flag
       
+      // IMPORTANT: Force initial position sync to prevent visual/physics mismatch
+      model.position.copy(this.droneState.pos);
+      model.rotation.order = 'YXZ';
+      model.rotation.y = this.droneState.yaw;
+      model.rotation.x = this.droneState.pitch;
+      model.rotation.z = -this.droneState.roll;
+      
       // Debug: Check drone model bounds to find correct ground offset
       const box = new THREE.Box3().setFromObject(model);
       const size = box.getSize(new THREE.Vector3());
@@ -1615,20 +2708,45 @@ class MainScene {
 
   // Update control inputs from WebSocket
   updateControls(controls, timestamp, powerState = true) {
+    // Don't process controls if drone model isn't ready
+    if (!this.droneModel) {
+      console.warn("Controls received but drone model not ready yet");
+      return;
+    }
+    
+    // Only log when there are significant changes or issues
+    const significantThrottle = controls.throttle > 0.1;
+    const armingChange = (controls.throttle > 0.05 && !this.propState.isArmed && powerState);
+    const powerChange = this.propState.powerOn !== powerState;
+    
+    // if (significantThrottle || armingChange || powerChange) {
+    //   console.log(`updateControls called: power=${powerState}, throttle=${controls.throttle.toFixed(3)}, armed=${this.propState.isArmed}, currentRPM=${this.propState.currentRPM.toFixed(0)}`);
+    // }
+    
     this.currentControls = controls;
     this.lastControlTime = timestamp;
     
     // Update power state
+    const wasPowerOff = !this.propState.powerOn;
     this.propState.powerOn = powerState;
     
     // Auto-arm when throttle is applied and power is on
     if (controls.throttle > 0.05 && !this.propState.isArmed && powerState) {
       this.propState.isArmed = true;
+      console.log("🚁 Drone ARMED - throttle applied with power ON");
     }
     
     // Disarm when power is turned off
     if (!powerState) {
+      if (this.propState.isArmed) {
+        console.log("🚁 Drone DISARMED - power turned OFF");
+      }
       this.propState.isArmed = false;
+    }
+    
+    // If power just turned on, log for debugging
+    if (wasPowerOff && powerState) {
+      console.log("🔋 Power just turned ON - drone ready for control");
     }
   }
 
@@ -1709,6 +2827,43 @@ class MainScene {
     this.controls.update();
   }
 
+  // Reset drone state when reconnecting
+  resetDroneState() {
+    console.log('Resetting drone state for reconnection...');
+    
+    // Reset physics state to initial values
+    this.droneState = {
+      pos: new THREE.Vector3(0, 1.5, 0),
+      vel: new THREE.Vector3(),
+      yaw: 0,
+      pitch: 0,
+      roll: 0
+    };
+
+    // Reset propeller state
+    this.propState = {
+      currentRPM: 0,
+      targetRPM: 0,
+      isArmed: false,
+      powerOn: false
+    };
+
+    // Reset control inputs
+    this.currentControls = { throttle: 0, yaw: 0, pitch: 0, roll: 0 };
+    this.lastControlTime = performance.now(); // Reset control time to prevent stale failsafe
+
+    // If drone model exists, reset its position and rotation
+    if (this.droneModel) {
+      this.droneModel.position.copy(this.droneState.pos);
+      this.droneModel.rotation.order = 'YXZ';
+      this.droneModel.rotation.y = this.droneState.yaw;
+      this.droneModel.rotation.x = this.droneState.pitch;
+      this.droneModel.rotation.z = -this.droneState.roll;
+    }
+
+    console.log('Drone state reset completed');
+  }
+
 
   animate() {
     this.animationId = requestAnimationFrame(this.animate.bind(this));
@@ -1734,6 +2889,7 @@ class MainScene {
       // Failsafe: if stale > 0.5s, zero inputs except gravity
       const stale = (now - this.lastControlTime) > 500;
       const target = stale ? {throttle: 0, yaw: 0, pitch: 0, roll: 0} : this.currentControls;
+
 
       // Process inputs with deadzone + stronger expo for realistic feel  
       const yawIn = this.expo(this.applyDeadzone(target.yaw), 0.5); 
@@ -1790,7 +2946,8 @@ class MainScene {
       this.checkHoopCollisions();
       
       // Check environment object collisions
-      this.checkEnvironmentCollisions();
+      // this.checkEnvironmentCollisions(); // OLD BOX3 SYSTEM - COMMENTED OUT
+      this.checkBVHCollisions(); // NEW BVH SYSTEM
       
       // Start race if drone is moving
       if (this.droneState.vel.length() > 0.5) {
@@ -1837,6 +2994,8 @@ class MainScene {
 
       // Realistic propeller RPM calculation
       this.updatePropellerRPM(target.throttle, dt);
+      
+      
       const propRotationSpeed = (this.propState.currentRPM / this.params.maxRPM) * 0.3;
       
       if (this.props[1]) this.props[1].rotation.y += propRotationSpeed;          
@@ -1987,18 +3146,18 @@ class MainScene {
     this.camera.position.set(x, y, z);
   }
 
-  // Set camera mode (chase or free)
-  setCameraMode(mode) {
-    this.cameraMode = mode;
-    
-    if (mode === 'free') {
-      // Enable orbit controls for free camera
-      this.controls.enabled = true;
-    } else {
-      // Disable orbit controls for chase camera
-      this.controls.enabled = false;
-    }
-  }
+  // Camera mode toggle - currently disabled
+  // setCameraMode(mode) {
+  //   this.cameraMode = mode;
+  //   
+  //   if (mode === 'free') {
+  //     // Enable orbit controls for free camera
+  //     this.controls.enabled = true;
+  //   } else {
+  //     // Disable orbit controls for chase camera
+  //     this.controls.enabled = false;
+  //   }
+  // }
 
   exportScene() {
     return {

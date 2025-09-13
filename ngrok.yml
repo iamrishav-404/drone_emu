@@ -1,5 +1,5 @@
 version: "2"
-authtoken: 32XdWluA5QWt9gbL3Ok0dhwOK7E_61FXN3s7kk9R1yAB8iYKq
+authtoken: 32eH6AbpIWIAscDHRqMdiXodOkP_3kekRquqsdT9idf9BsuRd
 tunnels:
   frontend:
     addr: 3001

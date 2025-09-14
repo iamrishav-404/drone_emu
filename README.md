@@ -29,7 +29,7 @@ A real-time 3D drone simulator where you control a virtual drone using your phon
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/iamrishav-404/drone_emu.git
 cd phone-pc_game
 
 # Install backend dependencies

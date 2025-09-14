@@ -1,5 +1,5 @@
 # Personal notes and temporary files
-notes.txt
+notes*
 
 # IDE and editor files
 .vscode/
@@ -16,3 +16,11 @@ notes.txt
 ehthumbs.db
 Thumbs.db
 ngrok.yml
+
+deploy-commands.md
+deploy.sh
+ecosystem.config.js
+health-check.sh
+nginx*.conf
+quick-deploy.sh
+fix-assets.sh

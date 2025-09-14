@@ -187,9 +187,9 @@ app.get("/generate-qr/:room", async (req, res) => {
     // Convert HTTP/HTTPS to WS/WSS appropriately
     let websocketUrl;
     if (backendUrl.startsWith('https://')) {
-      websocketUrl = backendUrl.replace('https://', 'wss://');
+      websocketUrl = backendUrl.replace('https://', 'wss://') + "/ws";
     } else {
-      websocketUrl = backendUrl.replace('http://', 'ws://');
+      websocketUrl = backendUrl.replace('http://', 'ws://') + "/ws";
     }
     
     console.log('Request protocol:', req.protocol);

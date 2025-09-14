@@ -224,9 +224,9 @@ const Receiver = () => {
         `http://${window.location.hostname}:3000`;
       let wsUrl;
       if (baseUrl.startsWith("https://")) {
-        wsUrl = baseUrl.replace("https://", "wss://");
+        wsUrl = baseUrl.replace("https://", "wss://") + "/ws";
       } else {
-        wsUrl = baseUrl.replace("http://", "ws://");
+        wsUrl = baseUrl.replace("http://", "ws://") + "/ws";
       }
       console.log("Receiver connecting to:", wsUrl, "for room:", room);
       await webrtcRef.current.connectToSignalingServer(wsUrl, room);

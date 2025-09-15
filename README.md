@@ -17,6 +17,8 @@ A real-time 3D drone simulator where you control a virtual drone using your phon
 3. Scan the QR code with your phone then start the connection
 4. Start flying! Use your phone's virtual joysticks to control the drone
 
+### - GamePlay Video : https://drive.google.com/file/d/1kdGHDk52boR_I7ONYdqwLpwRvJF8Oygn/view?usp=sharing
+
 ## 🚀 Getting Started
 
 ### Prerequisites

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firefox WebSocket Test</title>
+</head>
+<body>
+    <h1>Firefox WebSocket Test</h1>
+    <div id="status">Testing...</div>
+    <div id="log"></div>
+
+    <script>
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+        
+        function addLog(message) {
+            log.innerHTML += '<div>' + new Date().toISOString() + ': ' + message + '</div>';
+        }
+        
+        addLog('🦊 Firefox WebSocket test starting...');
+        addLog('User Agent: ' + navigator.userAgent);
+        
+        try {
+            addLog('Creating WebSocket connection to wss://droxgame.run.place/ws');
+            const ws = new WebSocket('wss://droxgame.run.place/ws');
+            
+            ws.onopen = function(event) {
+                addLog('✅ WebSocket connection opened!');
+                status.textContent = 'Connected!';
+                status.style.color = 'green';
+            };
+            
+            ws.onerror = function(error) {
+                addLog('❌ WebSocket error: ' + JSON.stringify(error));
+                status.textContent = 'Error!';
+                status.style.color = 'red';
+            };
+            
+            ws.onclose = function(event) {
+                addLog('🔒 WebSocket closed. Code: ' + event.code + ', Reason: ' + event.reason);
+                status.textContent = 'Closed!';
+                status.style.color = 'orange';
+            };
+            
+            // Test timeout
+            setTimeout(() => {
+                if (ws.readyState !== WebSocket.OPEN) {
+                    addLog('⏰ WebSocket connection timeout');
+                    ws.close();
+                }
+            }, 10000);
+            
+        } catch (e) {
+            addLog('💥 Exception creating WebSocket: ' + e.message);
+            status.textContent = 'Exception!';
+            status.style.color = 'red';
+        }
+    </script>
+</body>
+</html>

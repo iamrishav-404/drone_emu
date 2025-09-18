@@ -115,7 +115,7 @@ function Home() {
               <div className="step-number">2</div>
               <div className="step-content">
                 <strong>Connect devices</strong>
-                <p>Ensure both are on the same Wi-Fi network</p>
+                <p>Ensure both are on the same Wi-Fi network else good mobile internet</p>
               </div>
             </div>
             <div className="play-step">

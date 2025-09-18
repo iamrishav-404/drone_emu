@@ -15,6 +15,17 @@ const Receiver = () => {
     pitch: 0,
     roll: 0,
   });
+
+  // Browser compatibility detection
+  const isNonChromiumBrowser = () => {
+    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+    const isEdge = /Edg\//.test(navigator.userAgent);
+    const isOpera = /OPR\//.test(navigator.userAgent);
+    const isBrave = navigator.brave && typeof navigator.brave.isBrave === 'function';
+    
+    // Return true if it's NOT a Chromium-based browser
+    return !(isChrome || isEdge || isOpera || isBrave);
+  };
   const [droneSpeed, setDroneSpeed] = useState(0); // Total speed in m/s
   const [latency, setLatency] = useState("--");
   const [room, setRoom] = useState(() =>
@@ -399,6 +410,18 @@ const Receiver = () => {
               <h2>🚁 Drone Control Setup</h2>
             </div>
             <div className="popup-content">
+              {/* Browser Compatibility Warning */}
+              {isNonChromiumBrowser() && (
+                <div className="browser-warning">
+                  <div className="warning-icon">⚠️</div>
+                  <div className="warning-content">
+                    <h4>Browser Compatibility Notice</h4>
+                    <p>For the best experience, we recommend using <strong>Brave</strong>, <strong>Chrome</strong>, <strong>Edge</strong>, or another Chromium-based browser on both devices.</p>
+                    <p>Firefox and Safari may have WebSocket connectivity issues with our secure connection.</p>
+                  </div>
+                </div>
+              )}
+
               {connectionStep === "setup" && (
                 <div className="setup-step">
                   <p>Connect your phone controller to this receiver:</p>

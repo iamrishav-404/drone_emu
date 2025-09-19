@@ -783,7 +783,7 @@
 /* Browser Warning Styles */
 .browser-warning {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 15px;
   background: rgba(255, 193, 7, 0.1);
   border: 2px solid #ffc107;

@@ -7,6 +7,17 @@ import QRScanner from "./QRScanner";
 const Controller = () => {
   const [axes, setAxes] = useState({ throttle: 0, yaw: 0, pitch: 0, roll: 0 });
 
+  // Browser compatibility detection
+  const isNonChromiumBrowser = () => {
+    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+    const isEdge = /Edg\//.test(navigator.userAgent);
+    const isOpera = /OPR\//.test(navigator.userAgent);
+    const isBrave = navigator.brave && typeof navigator.brave.isBrave === 'function';
+    
+    // Return true if it's NOT a Chromium-based browser
+    return !(isChrome || isEdge || isOpera || isBrave);
+  };
+
   // Connection state
   const [isConnected, setIsConnected] = useState(false);
   const [webrtcStatus, setWebrtcStatus] = useState("disconnected");
@@ -627,6 +638,18 @@ const Controller = () => {
       {showConnectionPopup && (
         <div className="connection-overlay">
           <div className="connection-popup">
+            {/* Browser Compatibility Warning */}
+            {isNonChromiumBrowser() && (
+              <div className="browser-warning">
+                <div className="warning-icon">⚠️</div>
+                <div className="warning-content">
+                  <h4>Browser Compatibility Notice</h4>
+                  <p>For the best experience, we recommend using <strong>Brave</strong>, <strong>Chrome</strong>, <strong>Edge</strong>, or another Chromium-based browser on both devices.</p>
+                  <p>Firefox and Safari may have WebSocket connectivity issues with our secure connection.</p>
+                </div>
+              </div>
+            )}
+
             {connectionStep === "scanning" && (
               <div className="scanning-step">
                 <div className="step-icon">�</div>
